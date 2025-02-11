@@ -105,14 +105,14 @@
             <el-col :xl="10" :lg="10" :md="24" :sm="24" :xs="24">
               <el-card shadow="hover" class="mb-8px">
                 <el-skeleton :loading="loading" animated>
-                  <Echart :options="pieOptionsData" :height="280" />
+                  <Echart :options="pieOptionsData1" :height="280" />
                 </el-skeleton>
               </el-card>
             </el-col>
             <el-col :xl="14" :lg="14" :md="24" :sm="24" :xs="24">
               <el-card shadow="hover" class="mb-8px">
                 <el-skeleton :loading="loading" animated>
-                  <Echart :options="barOptionsData" :height="280" />
+                  <Echart :options="barOptionsData1" :height="280" />
                 </el-skeleton>
               </el-card>
             </el-col>
@@ -377,12 +377,12 @@ const getWeeklyUserActivity = async () => {
 
 const getAllApi = async () => {
   await Promise.all([
-    getCount(),
-    getProject(),
-    getNotice(),
-    getShortcut(),
-    getUserAccessSource(),
-    getWeeklyUserActivity()
+    //getCount(),
+    //getProject(),
+    //getNotice(),
+    //getShortcut(),
+    //getUserAccessSource(),
+    //getWeeklyUserActivity()
   ])
   loading.value = false
 }
