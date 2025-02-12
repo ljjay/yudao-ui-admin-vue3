@@ -23,6 +23,7 @@
             :prefix-icon="iconHouse"
             link
             type="primary"
+            :disabled="loginData.formDisabled"
           />
         </el-form-item>
       </el-col>
@@ -54,7 +55,7 @@
         <el-form-item>
           <el-row justify="space-between" style="width: 100%">
             <el-col :span="6">
-              <el-checkbox v-model="loginData.loginForm.rememberMe">
+              <el-checkbox v-model="loginData.loginForm.rememberMe"  @click="toggleDisabled">
                 {{ t('login.remember') }}
               </el-checkbox>
             </el-col>
@@ -81,6 +82,7 @@
           />
         </el-form-item>
       </el-col>
+
       <Verify
         v-if="loginData.captchaEnable === 'true'"
         ref="verify"
@@ -89,6 +91,9 @@
         mode="pop"
         @success="handleLogin"
       />
+
+<!--
+
       <el-col :span="24" style="padding-right: 10px; padding-left: 10px">
         <el-form-item>
           <el-row :gutter="5" justify="space-between" style="width: 100%">
@@ -132,6 +137,10 @@
           </div>
         </el-form-item>
       </el-col>
+-->
+
+
+<!--
       <el-divider content-position="center">萌新必读</el-divider>
       <el-col :span="24" style="padding-right: 10px; padding-left: 10px">
         <el-form-item>
@@ -147,6 +156,8 @@
           </div>
         </el-form-item>
       </el-col>
+      -->
+
     </el-row>
   </el-form>
 </template>
@@ -196,7 +207,9 @@ const loginData = reactive({
     password: import.meta.env.VITE_APP_DEFAULT_LOGIN_PASSWORD || '',
     captchaVerification: '',
     rememberMe: true // 默认记录我。如果不需要，可手动修改
-  }
+  },
+  formDisabled:true,
+  iconClickCount: 0 // 添加计数器
 })
 
 const socialList = [
@@ -323,6 +336,16 @@ const doSocialLogin = async (type: number) => {
     window.location.href = await LoginApi.socialAuthRedirect(type, encodeURIComponent(redirectUri))
   }
 }
+
+// 添加点击图标的方法
+const toggleDisabled = () => {
+  loginData.iconClickCount++
+  if (loginData.iconClickCount >= 20) {
+    loginData.formDisabled = !loginData.formDisabled
+    loginData.iconClickCount = 0 // 重置计数器
+  }
+}
+
 watch(
   () => currentRoute.value,
   (route: RouteLocationNormalizedLoaded) => {

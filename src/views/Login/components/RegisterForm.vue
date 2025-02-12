@@ -24,6 +24,7 @@
             link
             type="primary"
             size="large"
+            :disabled = "true"
           />
         </el-form-item>
       </el-col>
