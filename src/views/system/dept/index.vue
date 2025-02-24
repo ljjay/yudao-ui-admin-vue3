@@ -60,6 +60,7 @@
       v-if="refreshTable"
     >
       <el-table-column prop="name" label="部门名称" />
+      <el-table-column prop="code" label="部门编码" />
       <el-table-column prop="leader" label="负责人">
         <template #default="scope">
           {{ userList.find((user) => user.id === scope.row.leaderUserId)?.nickname }}

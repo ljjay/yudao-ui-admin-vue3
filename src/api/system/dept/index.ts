@@ -3,6 +3,7 @@ import request from '@/config/axios'
 export interface DeptVO {
   id?: number
   name: string
+  code: string
   parentId: number
   status: number
   sort: number
