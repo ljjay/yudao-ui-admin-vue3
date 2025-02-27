@@ -11,6 +11,20 @@
       :inline="true"
       label-width="68px"
     >
+      <!-- 部门选择下拉框 tree 控件     -->
+      <el-form-item label="部门" prop="deptId">
+        <el-tree-select
+          v-model="queryParams.deptIds"
+          :data="deptIdTreeData"
+          :props="defaultProps"
+          multiple
+          :render-after-expand="false"
+          check-on-click-node
+          check-strictly
+          style="width: 240px"
+        />
+      </el-form-item>
+
       <el-form-item label="仓库名称" prop="name">
         <el-input
           v-model="queryParams.name"
@@ -62,6 +76,7 @@
   <!-- 列表 -->
   <ContentWrap>
     <el-table v-loading="loading" :data="list" :stripe="true" :show-overflow-tooltip="true">
+      <el-table-column label="单位" align="center" prop="deptName" />
       <el-table-column label="仓库名称" align="center" prop="name" />
       <el-table-column label="仓库地址" align="center" prop="address" />
       <el-table-column
@@ -142,6 +157,8 @@ import download from '@/utils/download'
 import { WarehouseApi, WarehouseVO } from '@/api/erp/stock/warehouse'
 import WarehouseForm from './WarehouseForm.vue'
 import { erpPriceTableColumnFormatter } from '@/utils'
+import {defaultProps, handleTree} from "@/utils/tree";
+import * as DeptApi from "@/api/system/dept";
 
 /** ERP 仓库列表 */
 defineOptions({ name: 'ErpWarehouse' })
@@ -156,10 +173,14 @@ const queryParams = reactive({
   pageNo: 1,
   pageSize: 10,
   name: undefined,
-  status: undefined
+  status: undefined,
+  deptIds: undefined
 })
+
+
 const queryFormRef = ref() // 搜索的表单
 const exportLoading = ref(false) // 导出的加载中
+const deptIdTreeData = ref<any[]>([]) // 部门树形结构
 
 /** 查询列表 */
 const getList = async () => {
@@ -235,8 +256,14 @@ const handleExport = async () => {
   }
 }
 
+/** 获取有权限的部门 */
+const getDeptIdTreeData = async () => {
+  deptIdTreeData.value = handleTree(await DeptApi.getSimpleDeptList())
+}
+
 /** 初始化 **/
 onMounted(() => {
   getList()
+  getDeptIdTreeData()
 })
 </script>

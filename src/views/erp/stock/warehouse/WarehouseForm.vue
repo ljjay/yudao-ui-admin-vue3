@@ -8,6 +8,18 @@
       label-width="100px"
       v-loading="formLoading"
     >
+      <el-form-item label="部门" prop="deptId">
+        <el-tree-select
+          v-model="formData.deptId"
+          :data="deptIdTreeData"
+          :props="defaultProps"
+          :render-after-expand="false"
+          check-on-click-node
+          check-strictly
+          style="width: 240px"
+        />
+      </el-form-item>
+
       <el-form-item label="仓库名称" prop="name">
         <el-input v-model="formData.name" placeholder="请输入仓库名称" />
       </el-form-item>
@@ -68,6 +80,8 @@
 import { getIntDictOptions, DICT_TYPE } from '@/utils/dict'
 import { WarehouseApi, WarehouseVO } from '@/api/erp/stock/warehouse'
 import { CommonStatusEnum } from '@/utils/constants'
+import {defaultProps, handleTree} from "@/utils/tree";
+import * as DeptApi from "@/api/system/dept";
 
 /** ERP 仓库表单 */
 defineOptions({ name: 'WarehouseForm' })
@@ -88,14 +102,17 @@ const formData = ref({
   principal: undefined,
   warehousePrice: undefined,
   truckagePrice: undefined,
+  deptId: undefined,
   status: undefined
 })
 const formRules = reactive({
   name: [{ required: true, message: '仓库名称不能为空', trigger: 'blur' }],
   sort: [{ required: true, message: '排序不能为空', trigger: 'blur' }],
-  status: [{ required: true, message: '开启状态不能为空', trigger: 'blur' }]
+  status: [{ required: true, message: '开启状态不能为空', trigger: 'blur' }],
+  deptId: [{ required: true, message: '单位不能为空', trigger: 'blur' }]
 })
 const formRef = ref() // 表单 Ref
+const deptIdTreeData = ref<any[]>([]) // 部门树形结构
 
 /** 打开弹窗 */
 const open = async (type: string, id?: number) => {
@@ -103,6 +120,7 @@ const open = async (type: string, id?: number) => {
   dialogTitle.value = t('action.' + type)
   formType.value = type
   resetForm()
+  getDeptIdTreeData()
   // 修改时，设置数据
   if (id) {
     formLoading.value = true
@@ -114,6 +132,11 @@ const open = async (type: string, id?: number) => {
   }
 }
 defineExpose({ open }) // 提供 open 方法，用于打开弹窗
+
+/** 获取有权限的部门 */
+const getDeptIdTreeData = async () => {
+  deptIdTreeData.value = handleTree(await DeptApi.getSimpleDeptList())
+}
 
 /** 提交表单 */
 const emit = defineEmits(['success']) // 定义 success 事件，用于操作成功后的回调
@@ -150,6 +173,7 @@ const resetForm = () => {
     principal: undefined,
     warehousePrice: undefined,
     truckagePrice: undefined,
+    deptId: undefined,
     status: CommonStatusEnum.ENABLE
   }
   formRef.value?.resetFields()

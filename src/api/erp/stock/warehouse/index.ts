@@ -12,6 +12,8 @@ export interface WarehouseVO {
   truckagePrice: number // 搬运费，单位：元
   status: number // 开启状态
   defaultStatus: boolean // 是否默认
+  deptId: number // 部门id
+  deptNmae: string // 部门名称
 }
 
 // ERP 仓库 API
