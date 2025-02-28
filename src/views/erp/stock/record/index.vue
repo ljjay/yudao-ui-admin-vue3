@@ -11,6 +11,19 @@
       :inline="true"
       label-width="68px"
     >
+      <!-- 部门选择下拉框 tree 控件     -->
+      <el-form-item label="单位" prop="deptId">
+        <el-tree-select
+          v-model="queryParams.deptIds"
+          :data="deptIdTreeData"
+          :props="defaultProps"
+          multiple
+          :render-after-expand="false"
+          check-on-click-node
+          check-strictly
+          style="width: 240px"
+        />
+      </el-form-item>
       <el-form-item label="产品" prop="productId">
         <el-select
           v-model="queryParams.productId"
@@ -105,6 +118,7 @@
   <!-- 列表 -->
   <ContentWrap>
     <el-table v-loading="loading" :data="list" :stripe="true" :show-overflow-tooltip="true">
+      <el-table-column label="单位" align="center" prop="deptName" />
       <el-table-column label="产品名称" align="center" prop="productName" />
       <el-table-column label="产品分类" align="center" prop="categoryName" />
       <el-table-column label="产品单位" align="center" prop="unitName" />
@@ -154,6 +168,8 @@ import { StockRecordApi, StockRecordVO } from '@/api/erp/stock/record'
 import { ProductApi, ProductVO } from '@/api/erp/product/product'
 import { WarehouseApi, WarehouseVO } from '@/api/erp/stock/warehouse'
 import { erpCountTableColumnFormatter } from '@/utils'
+import {defaultProps, handleTree} from "@/utils/tree";
+import * as DeptApi from "@/api/system/dept";
 
 /** ERP 产品库存明细列表 */
 defineOptions({ name: 'ErpStockRecord' })
@@ -171,12 +187,14 @@ const queryParams = reactive({
   warehouseId: undefined,
   bizType: undefined,
   bizNo: undefined,
-  createTime: []
+  createTime: [],
+  deptIds: []
 })
 const queryFormRef = ref() // 搜索的表单
 const exportLoading = ref(false) // 导出的加载中
 const productList = ref<ProductVO[]>([]) // 产品列表
 const warehouseList = ref<WarehouseVO[]>([]) // 仓库列表
+const deptIdTreeData = ref<any[]>([]) // 部门树形结构
 
 /** 查询列表 */
 const getList = async () => {
@@ -199,6 +217,7 @@ const handleQuery = () => {
 /** 重置按钮操作 */
 const resetQuery = () => {
   queryFormRef.value.resetFields()
+  queryParams.deptIds = [];
   handleQuery()
 }
 
@@ -235,6 +254,10 @@ const handleExport = async () => {
     exportLoading.value = false
   }
 }
+/** 获取有权限的部门 */
+const getDeptIdTreeData = async () => {
+  deptIdTreeData.value = handleTree(await DeptApi.getSimpleDeptList())
+}
 
 /** 初始化 **/
 onActivated(() => {
@@ -243,6 +266,8 @@ onActivated(() => {
 
 onMounted(async () => {
   await getList()
+  // 加载有权限的部门
+  await getDeptIdTreeData()
   // 加载产品、仓库列表
   productList.value = await ProductApi.getProductSimpleList()
   warehouseList.value = await WarehouseApi.getWarehouseSimpleList()

@@ -28,6 +28,11 @@ export const WarehouseApi = {
     return await request.get({ url: `/erp/warehouse/simple-list` })
   },
 
+  // 查询仓库精简列表-以部门查询
+  getWarehouseSimpleListByDeptId: async (deptId: number) => {
+    return await request.get({ url: `/erp/warehouse/simple-list-by-deptId?deptId=` + deptId})
+  },
+
   // 查询仓库详情
   getWarehouse: async (id: number) => {
     return await request.get({ url: `/erp/warehouse/get?id=` + id })

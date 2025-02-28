@@ -48,7 +48,7 @@
               placeholder="请选择调入仓库"
             >
               <el-option
-                v-for="item in warehouseList"
+                v-for="item in toWarehouseList"
                 :key="item.id"
                 :label="item.name"
                 :value="item.id"
@@ -176,7 +176,28 @@ const formRules = reactive({
 const formRef = ref([]) // 表单 Ref
 const productList = ref<ProductVO[]>([]) // 产品列表
 const warehouseList = ref<WarehouseVO[]>([]) // 仓库列表
+const toWarehouseList = ref<WarehouseVO[]>([]) // 仓库列表
 const defaultWarehouse = ref<WarehouseVO>(undefined) // 默认仓库
+
+// 新增：重置仓库列表的方法
+const resetWarehouseList = async (isReset: boolean ,type: string,newDeptId: number) => {
+  if (type === 'from') {
+    warehouseList.value = await WarehouseApi.getWarehouseSimpleListByDeptId(newDeptId)
+    defaultWarehouse.value = warehouseList.value.find((item) => item.default)
+  }else {
+    toWarehouseList.value = await WarehouseApi.getWarehouseSimpleListByDeptId(newDeptId)
+  }
+  // 新增：清空所有行仓库的选中
+  if (isReset) {
+    formData.value.forEach(row => {
+      if (type === 'from') {
+        row.fromWarehouseId = undefined
+      }else{
+        row.toWarehouseId = undefined
+      }
+    })
+  }
+}
 
 /** 初始化设置调度项 */
 watch(
@@ -277,13 +298,13 @@ const setStockCount = async (row) => {
 const validate = () => {
   return formRef.value.validate()
 }
-defineExpose({ validate })
+defineExpose({ validate , resetWarehouseList})
 
 /** 初始化 */
 onMounted(async () => {
   productList.value = await ProductApi.getProductSimpleList()
-  warehouseList.value = await WarehouseApi.getWarehouseSimpleList()
-  defaultWarehouse.value = warehouseList.value.find((item) => item.defaultStatus)
+  //warehouseList.value = await WarehouseApi.getWarehouseSimpleList()
+  //defaultWarehouse.value = warehouseList.value.find((item) => item.defaultStatus)
   // 默认添加一个
   if (formData.value.length === 0) {
     handleAdd()

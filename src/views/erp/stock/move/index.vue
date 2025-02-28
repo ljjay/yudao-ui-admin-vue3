@@ -13,6 +13,32 @@
       :inline="true"
       label-width="68px"
     >
+      <!-- 部门选择下拉框 tree 控件     -->
+      <el-form-item label="单位" prop="deptId">
+        <el-tree-select
+          v-model="queryParams.deptIds"
+          :data="deptIdTreeData"
+          :props="defaultProps"
+          multiple
+          :render-after-expand="false"
+          check-on-click-node
+          check-strictly
+          style="width: 240px"
+        />
+      </el-form-item>
+      <!-- 调出部门选择下拉框 tree 控件     -->
+      <el-form-item label="单位" prop="deptId">
+        <el-tree-select
+          v-model="queryParams.toDeptIds"
+          :data="toDeptIdTreeData"
+          :props="defaultProps"
+          multiple
+          :render-after-expand="false"
+          check-on-click-node
+          check-strictly
+          style="width: 240px"
+        />
+      </el-form-item>
       <el-form-item label="调度单号" prop="no">
         <el-input
           v-model="queryParams.no"
@@ -106,7 +132,7 @@
         <el-button
           type="primary"
           plain
-          @click="openForm('create')"
+          @click="openForm(undefined,'create')"
           v-hasPermi="['erp:stock-move:create']"
         >
           <Icon icon="ep:plus" class="mr-5px" /> 新增
@@ -143,6 +169,8 @@
       @selection-change="handleSelectionChange"
     >
       <el-table-column width="30" label="选择" type="selection" />
+      <el-table-column label="单位" align="center" prop="deptName" />
+      <el-table-column label="调出单位" align="center" prop="toDeptName" />
       <el-table-column min-width="180" label="调度单号" align="center" prop="no" />
       <el-table-column label="产品信息" align="center" prop="productNames" min-width="200" />
       <el-table-column
@@ -174,7 +202,7 @@
         <template #default="scope">
           <el-button
             link
-            @click="openForm('detail', scope.row.id)"
+            @click="openForm(scope.row,'detail', scope.row.id)"
             v-hasPermi="['erp:stock-move:query']"
           >
             详情
@@ -182,7 +210,7 @@
           <el-button
             link
             type="primary"
-            @click="openForm('update', scope.row.id)"
+            @click="openForm(scope.row,'update', scope.row.id)"
             v-hasPermi="['erp:stock-move:update']"
             :disabled="scope.row.status === 20"
           >
@@ -241,6 +269,8 @@ import { WarehouseApi, WarehouseVO } from '@/api/erp/stock/warehouse'
 import { UserVO } from '@/api/system/user'
 import * as UserApi from '@/api/system/user'
 import { erpCountTableColumnFormatter, erpPriceTableColumnFormatter } from '@/utils'
+import {defaultProps, handleTree} from "@/utils/tree";
+import * as DeptApi from "@/api/system/dept";
 
 /** ERP 库存调度单列表 */
 defineOptions({ name: 'ErpStockMove' })
@@ -260,13 +290,17 @@ const queryParams = reactive({
   moveTime: [],
   status: undefined,
   remark: undefined,
-  creator: undefined
+  creator: undefined,
+  deptIds: [],
+  toDeptIds:[],
 })
 const queryFormRef = ref() // 搜索的表单
 const exportLoading = ref(false) // 导出的加载中
 const productList = ref<ProductVO[]>([]) // 产品列表
 const warehouseList = ref<WarehouseVO[]>([]) // 仓库列表
 const userList = ref<UserVO[]>([]) // 用户列表
+const deptIdTreeData = ref<any[]>([]) // 部门树形结构
+const toDeptIdTreeData = ref<any[]>([]) // 调出部门树形结构
 
 /** 查询列表 */
 const getList = async () => {
@@ -289,13 +323,15 @@ const handleQuery = () => {
 /** 重置按钮操作 */
 const resetQuery = () => {
   queryFormRef.value.resetFields()
+  queryParams.deptIds = [];
+  queryParams.toDeptIds = [];
   handleQuery()
 }
 
 /** 添加/修改操作 */
 const formRef = ref()
-const openForm = (type: string, id?: number) => {
-  formRef.value.open(type, id)
+const openForm = (row,type: string, id?: number) => {
+  formRef.value.open(row,type, id)
 }
 
 /** 删除按钮操作 */
@@ -346,9 +382,17 @@ const handleSelectionChange = (rows: StockMoveVO[]) => {
   selectionList.value = rows
 }
 
+/** 获取有权限的部门 */
+const getDeptIdTreeData = async () => {
+  deptIdTreeData.value = handleTree(await DeptApi.getSimpleDeptList())
+  toDeptIdTreeData.value = handleTree(await DeptApi.getSimpleDeptList())
+}
+
 /** 初始化 **/
 onMounted(async () => {
   await getList()
+  // 加载有权限的部门
+  await getDeptIdTreeData()
   // 加载产品、仓库列表、客户
   productList.value = await ProductApi.getProductSimpleList()
   warehouseList.value = await WarehouseApi.getWarehouseSimpleList()

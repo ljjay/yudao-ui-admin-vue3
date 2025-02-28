@@ -12,7 +12,7 @@
       label-width="68px"
     >
       <!-- 部门选择下拉框 tree 控件     -->
-      <el-form-item label="部门" prop="deptId">
+      <el-form-item label="单位" prop="deptId">
         <el-tree-select
           v-model="queryParams.deptIds"
           :data="deptIdTreeData"
@@ -174,7 +174,7 @@ const queryParams = reactive({
   pageSize: 10,
   name: undefined,
   status: undefined,
-  deptIds: undefined
+  deptIds: []
 })
 
 
@@ -203,6 +203,7 @@ const handleQuery = () => {
 /** 重置按钮操作 */
 const resetQuery = () => {
   queryFormRef.value.resetFields()
+  queryParams.deptIds = [];
   handleQuery()
 }
 
