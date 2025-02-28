@@ -11,7 +11,7 @@
       <el-row :gutter="20">
         <el-col :span="8">
           <el-form-item label="入库单号" prop="no">
-            <el-input disabled v-model="formData.no" placeholder="保存时自动生成" />
+            <el-input disabled v-model="formData.no" placeholder="保存时自动生成"/>
           </el-form-item>
         </el-col>
         <el-col :span="8">
@@ -43,7 +43,21 @@
             </el-select>
           </el-form-item>
         </el-col>
-        <el-col :span="16">
+        <el-col :span="8">
+          <el-form-item label="单位" prop="deptId">
+            <el-tree-select
+              v-model="formData.deptId"
+              :data="deptIdTreeData"
+              :props="defaultProps"
+              :render-after-expand="false"
+              check-on-click-node
+              check-strictly
+              style="width: 240px"
+              @change="handleDeptChange"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :span="8">
           <el-form-item label="备注" prop="remark">
             <el-input
               type="textarea"
@@ -55,7 +69,7 @@
         </el-col>
         <el-col :span="8">
           <el-form-item label="附件" prop="fileUrl">
-            <UploadFile :is-show-tip="false" v-model="formData.fileUrl" :limit="1" />
+            <UploadFile :is-show-tip="false" v-model="formData.fileUrl" :limit="1"/>
           </el-form-item>
         </el-col>
       </el-row>
@@ -64,7 +78,7 @@
     <ContentWrap>
       <el-tabs v-model="subTabsName" class="-mt-15px -mb-10px">
         <el-tab-pane label="入库产品清单" name="item">
-          <StockInItemForm ref="itemFormRef" :items="formData.items" :disabled="disabled" />
+          <StockInItemForm ref="itemFormRef" :items="formData.items" :disabled="disabled"/>
         </el-tab-pane>
       </el-tabs>
     </ContentWrap>
@@ -77,14 +91,16 @@
   </Dialog>
 </template>
 <script setup lang="ts">
-import { StockInApi, StockInVO } from '@/api/erp/stock/in'
+import {StockInApi, StockInVO} from '@/api/erp/stock/in'
 import StockInItemForm from './components/StockInItemForm.vue'
-import { SupplierApi, SupplierVO } from '@/api/erp/purchase/supplier'
+import {SupplierApi, SupplierVO} from '@/api/erp/purchase/supplier'
+import {defaultProps, handleTree} from "@/utils/tree";
+import * as DeptApi from "@/api/system/dept";
 
 /** ERP 其它入库单 表单 */
-defineOptions({ name: 'StockInForm' })
+defineOptions({name: 'StockInForm'})
 
-const { t } = useI18n() // 国际化
+const {t} = useI18n() // 国际化
 const message = useMessage() // 消息弹窗
 
 const dialogVisible = ref(false) // 弹窗的是否展示
@@ -97,25 +113,36 @@ const formData = ref({
   inTime: undefined,
   remark: undefined,
   fileUrl: '',
-  items: []
+  items: [],
+  deptId: undefined
 })
+
 const formRules = reactive({
-  inTime: [{ required: true, message: '入库时间不能为空', trigger: 'blur' }]
+  inTime: [{required: true, message: '入库时间不能为空', trigger: 'blur'}],
+  deptId: [{required: true, message: '单位不能为空', trigger: 'blur'}],
+  supplierId: [{required: true, message: '入库来源不能为空', trigger: 'blur'}]
 })
 const disabled = computed(() => formType.value === 'detail')
 const formRef = ref() // 表单 Ref
 const supplierList = ref<SupplierVO[]>([]) // 供应商列表
+const deptIdTreeData = ref<any[]>([]) // 部门树形结构
 
 /** 子表的表单 */
 const subTabsName = ref('item')
 const itemFormRef = ref()
 
 /** 打开弹窗 */
-const open = async (type: string, id?: number) => {
+const open = async (row , type: string, id?: number) => {
   dialogVisible.value = true
   dialogTitle.value = t('action.' + type)
   formType.value = type
   resetForm()
+  await getDeptIdTreeData()
+  if(row != undefined && row.deptId != undefined){
+    if (itemFormRef.value) {
+      await itemFormRef.value.resetWarehouseList(false,row.deptId)
+    }
+  }
   // 修改时，设置数据
   if (id) {
     formLoading.value = true
@@ -128,7 +155,20 @@ const open = async (type: string, id?: number) => {
   // 加载供应商列表
   supplierList.value = await SupplierApi.getSupplierSimpleList()
 }
-defineExpose({ open }) // 提供 open 方法，用于打开弹窗
+
+defineExpose({open}) // 提供 open 方法，用于打开弹窗
+
+/** 获取有权限的部门 */
+const getDeptIdTreeData = async () => {
+  deptIdTreeData.value = handleTree(await DeptApi.getSimpleDeptList())
+}
+
+/** 部门更改时 */
+const handleDeptChange = (newDeptId: number) => {
+  if (itemFormRef.value) {
+    itemFormRef.value.resetWarehouseList(true, newDeptId)
+  }
+}
 
 /** 提交表单 */
 const emit = defineEmits(['success']) // 定义 success 事件，用于操作成功后的回调
@@ -163,7 +203,8 @@ const resetForm = () => {
     inTime: undefined,
     remark: undefined,
     fileUrl: undefined,
-    items: []
+    items: [],
+    deptId: undefined
   }
   formRef.value?.resetFields()
 }

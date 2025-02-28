@@ -9,6 +9,8 @@ export interface StockMoveVO {
   totalPrice: number // 合计金额，单位：元
   status: number // 状态
   remark: string // 备注
+  deptId: number // 部门编号
+  toDeptId: number //调出部门编号
 }
 
 // ERP 库存调度单 API

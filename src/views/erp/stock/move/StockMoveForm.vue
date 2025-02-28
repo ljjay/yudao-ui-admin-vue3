@@ -25,13 +25,41 @@
             />
           </el-form-item>
         </el-col>
-        <el-col :span="16">
+        <el-col :span="8">
           <el-form-item label="备注" prop="remark">
             <el-input
               type="textarea"
               v-model="formData.remark"
               :rows="1"
               placeholder="请输入备注"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :span="8">
+          <el-form-item label="单位" prop="deptId">
+            <el-tree-select
+              v-model="formData.deptId"
+              :data="deptIdTreeData"
+              :props="defaultProps"
+              :render-after-expand="false"
+              check-on-click-node
+              check-strictly
+              style="width: 240px"
+              @change=" (value) => {handleDeptChange('to',value)}"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :span="8">
+          <el-form-item label="调出单位" prop="deptId">
+            <el-tree-select
+              v-model="formData.toDeptId"
+              :data="deptIdTreeData"
+              :props="defaultProps"
+              :render-after-expand="false"
+              check-on-click-node
+              check-strictly
+              style="width: 240px"
+              @change=" (value) => {handleDeptChange('from',value)}"
             />
           </el-form-item>
         </el-col>
@@ -61,6 +89,8 @@
 <script setup lang="ts">
 import { StockMoveApi, StockMoveVO } from '@/api/erp/stock/move'
 import StockMoveItemForm from './components/StockMoveItemForm.vue'
+import {defaultProps, handleTree} from "@/utils/tree";
+import * as DeptApi from "@/api/system/dept";
 
 /** ERP 库存调度单表单 */
 defineOptions({ name: 'StockMoveForm' })
@@ -78,24 +108,37 @@ const formData = ref({
   moveTime: undefined,
   remark: undefined,
   fileUrl: '',
-  items: []
+  items: [],
+  deptId: undefined,
+  toDeptId: undefined
 })
 const formRules = reactive({
-  moveTime: [{ required: true, message: '调度时间不能为空', trigger: 'blur' }]
+  moveTime: [{ required: true, message: '调度时间不能为空', trigger: 'blur' }],
+  deptId: [{required: true, message: '单位不能为空', trigger: 'blur'}],
+  toDeptId: [{required: true, message: '调出单位不能为空', trigger: 'blur'}]
 })
 const disabled = computed(() => formType.value === 'detail')
 const formRef = ref() // 表单 Ref
+const deptIdTreeData = ref<any[]>([]) // 部门树形结构
+const toDeptIdTreeData = ref<any[]>([]) // 调出部门树形结构
 
 /** 子表的表单 */
 const subTabsName = ref('item')
 const itemFormRef = ref()
 
 /** 打开弹窗 */
-const open = async (type: string, id?: number) => {
+const open = async (row,type: string, id?: number) => {
   dialogVisible.value = true
   dialogTitle.value = t('action.' + type)
   formType.value = type
   resetForm()
+  await getDeptIdTreeData()
+  if(row != undefined && row.deptId != undefined){
+    if (itemFormRef.value) {
+      await itemFormRef.value.resetWarehouseList(false,'from',row.deptId)
+      await itemFormRef.value.resetWarehouseList(false,'to',row.toDeptId)
+    }
+  }
   // 修改时，设置数据
   if (id) {
     formLoading.value = true
@@ -107,6 +150,20 @@ const open = async (type: string, id?: number) => {
   }
 }
 defineExpose({ open }) // 提供 open 方法，用于打开弹窗
+
+/** 获取有权限的部门 */
+const getDeptIdTreeData = async () => {
+  deptIdTreeData.value = handleTree(await DeptApi.getSimpleDeptList())
+  toDeptIdTreeData.value = handleTree(await DeptApi.getSimpleDeptList())
+}
+
+/** 部门更改时 */
+const handleDeptChange = (type: string ,newDeptId: number) => {
+  if (itemFormRef.value) {
+    itemFormRef.value.resetWarehouseList(true,type,newDeptId)
+  }
+}
+
 
 /** 提交表单 */
 const emit = defineEmits(['success']) // 定义 success 事件，用于操作成功后的回调
@@ -141,7 +198,9 @@ const resetForm = () => {
     moveTime: undefined,
     remark: undefined,
     fileUrl: undefined,
-    items: []
+    items: [],
+    deptId: undefined,
+    toDeptId: undefined
   }
   formRef.value?.resetFields()
 }

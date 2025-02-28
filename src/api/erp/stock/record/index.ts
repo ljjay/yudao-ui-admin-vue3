@@ -11,6 +11,7 @@ export interface StockRecordVO {
   bizId: number // 业务编号
   bizItemId: number // 业务项编号
   bizNo: string // 业务单号
+  deptId: number // 部门编号
 }
 
 // ERP 产品库存明细 API

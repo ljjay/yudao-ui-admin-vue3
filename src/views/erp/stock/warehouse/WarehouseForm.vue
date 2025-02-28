@@ -120,7 +120,7 @@ const open = async (type: string, id?: number) => {
   dialogTitle.value = t('action.' + type)
   formType.value = type
   resetForm()
-  getDeptIdTreeData()
+  await getDeptIdTreeData()
   // 修改时，设置数据
   if (id) {
     formLoading.value = true
