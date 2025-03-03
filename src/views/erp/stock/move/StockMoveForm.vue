@@ -36,7 +36,7 @@
           </el-form-item>
         </el-col>
         <el-col :span="8">
-          <el-form-item label="单位" prop="deptId">
+          <el-form-item label="调出单位" prop="deptId">
             <el-tree-select
               v-model="formData.deptId"
               :data="deptIdTreeData"
@@ -45,12 +45,12 @@
               check-on-click-node
               check-strictly
               style="width: 240px"
-              @change=" (value) => {handleDeptChange('to',value)}"
+              @change=" (value) => {handleDeptChange('from',value)}"
             />
           </el-form-item>
         </el-col>
         <el-col :span="8">
-          <el-form-item label="调出单位" prop="deptId">
+          <el-form-item label="调入单位" prop="deptId">
             <el-tree-select
               v-model="formData.toDeptId"
               :data="deptIdTreeData"
@@ -59,7 +59,7 @@
               check-on-click-node
               check-strictly
               style="width: 240px"
-              @change=" (value) => {handleDeptChange('from',value)}"
+              @change=" (value) => {handleDeptChange('to',value)}"
             />
           </el-form-item>
         </el-col>
