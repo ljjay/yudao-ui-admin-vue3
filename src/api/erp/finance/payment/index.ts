@@ -9,6 +9,7 @@ export interface FinancePaymentVO {
   totalPrice: number // 合计金额，单位：元
   status: number // 状态
   remark: string // 备注
+  deptId: number // 部门编号
 }
 
 // ERP 付款单 API

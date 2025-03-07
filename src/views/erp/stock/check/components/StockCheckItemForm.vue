@@ -169,6 +169,18 @@ const productList = ref<ProductVO[]>([]) // 产品列表
 const warehouseList = ref<WarehouseVO[]>([]) // 仓库列表
 const defaultWarehouse = ref<WarehouseVO>(undefined) // 默认仓库
 
+// 新增：重置仓库列表的方法
+const resetWarehouseList = async (isReset: boolean ,newDeptId: number) => {
+  warehouseList.value = await WarehouseApi.getWarehouseSimpleListByDeptId(newDeptId)
+  defaultWarehouse.value = warehouseList.value.find((item) => item.defaultStatus)
+  // 新增：清空所有行仓库的选中
+  if (isReset) {
+    formData.value.forEach(row => {
+      row.warehouseId = undefined
+    })
+  }
+}
+
 /** 初始化设置盘点项 */
 watch(
   () => props.items,
@@ -274,13 +286,13 @@ const setStockCount = async (row) => {
 const validate = () => {
   return formRef.value.validate()
 }
-defineExpose({ validate })
+defineExpose({ validate ,resetWarehouseList})
 
 /** 初始化 */
 onMounted(async () => {
   productList.value = await ProductApi.getProductSimpleList()
-  warehouseList.value = await WarehouseApi.getWarehouseSimpleList()
-  defaultWarehouse.value = warehouseList.value.find((item) => item.defaultStatus)
+  //warehouseList.value = await WarehouseApi.getWarehouseSimpleList()
+  //defaultWarehouse.value = warehouseList.value.find((item) => item.defaultStatus)
   // 默认添加一个
   if (formData.value.length === 0) {
     handleAdd()

@@ -86,6 +86,7 @@ const props = defineProps<{
   items: undefined
   supplierId: undefined
   disabled: false
+  deptId: undefined
 }>()
 const message = useMessage()
 
@@ -132,7 +133,11 @@ const handleOpenPurchaseIn = () => {
     message.error('请选择供应商')
     return
   }
-  purchaseInPaymentEnableListRef.value.open(props.supplierId)
+  if (!props.deptId) {
+    message.error('请选择单位')
+    return
+  }
+  purchaseInPaymentEnableListRef.value.open(props.supplierId,props.deptId)
 }
 const handleAddPurchaseIn = (rows: PurchaseInVO[]) => {
   rows.forEach((row) => {
@@ -154,7 +159,11 @@ const handleOpenPurchaseReturn = () => {
     message.error('请选择供应商')
     return
   }
-  purchaseReturnRefundEnableListRef.value.open(props.supplierId)
+  if (!props.deptId) {
+    message.error('请选择单位')
+    return
+  }
+  purchaseReturnRefundEnableListRef.value.open(props.supplierId, props.deptId)
 }
 const handleAddPurchaseReturn = (rows: PurchaseReturnVO[]) => {
   rows.forEach((row) => {

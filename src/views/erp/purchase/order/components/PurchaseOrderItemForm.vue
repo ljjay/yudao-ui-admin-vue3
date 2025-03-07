@@ -74,7 +74,7 @@
             <el-input-number
               v-model="row.productPrice"
               controls-position="right"
-              :min="0.01"
+              :min="0"
               :precision="2"
               class="!w-100%"
             />
@@ -152,7 +152,9 @@ import {
 const props = defineProps<{
   items: undefined
   disabled: false
+  deptId: undefined
 }>()
+const message = useMessage()
 const formLoading = ref(false) // 表单的加载中
 const formData = ref([])
 const formRules = reactive({
@@ -240,6 +242,13 @@ const handleDelete = (index: number) => {
 
 /** 处理产品变更 */
 const onChangeProduct = (productId, row) => {
+  if (!props.deptId) {
+    message.error('请选先择单位')
+    //清空
+    row.productId = undefined
+    return
+  }
+
   const product = productList.value.find((item) => item.id === productId)
   if (product) {
     row.productUnitName = product.unitName
@@ -255,7 +264,7 @@ const setStockCount = async (row: any) => {
   if (!row.productId) {
     return
   }
-  const count = await StockApi.getStockCount(row.productId)
+  const count = await StockApi.getStockCountByDept(row.productId,props.deptId)
   row.stockCount = count || 0
 }
 

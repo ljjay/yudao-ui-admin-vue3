@@ -80,6 +80,7 @@ const props = defineProps<{
   items: undefined
   customerId: undefined
   disabled: false
+  deptId: undefined
 }>()
 const message = useMessage()
 
@@ -126,7 +127,11 @@ const handleOpenSaleOut = () => {
     message.error('请选择客户')
     return
   }
-  saleOutReceiptEnableListRef.value.open(props.customerId)
+  if (!props.deptId) {
+    message.error('请选择单位')
+    return
+  }
+  saleOutReceiptEnableListRef.value.open(props.customerId,props.deptId)
 }
 const handleAddSaleOut = (rows: SaleOutVO[]) => {
   rows.forEach((row) => {
@@ -148,7 +153,11 @@ const handleOpenSaleReturn = () => {
     message.error('请选择客户')
     return
   }
-  saleReturnRefundEnableListRef.value.open(props.customerId)
+  if (!props.deptId) {
+    message.error('请选择单位')
+    return
+  }
+  saleReturnRefundEnableListRef.value.open(props.customerId,props.deptId)
 }
 const handleAddSaleReturn = (rows: SaleReturnVO[]) => {
   rows.forEach((row) => {

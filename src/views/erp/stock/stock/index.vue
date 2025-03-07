@@ -151,13 +151,13 @@ const getList = async () => {
 /** 搜索按钮操作 */
 const handleQuery = () => {
   queryParams.pageNo = 1
-  queryParams.deptIds = [];
   getList()
 }
 
 /** 重置按钮操作 */
 const resetQuery = () => {
   queryFormRef.value.resetFields()
+  queryParams.deptIds = [];
   handleQuery()
 }
 

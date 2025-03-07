@@ -25,7 +25,21 @@
             />
           </el-form-item>
         </el-col>
-        <el-col :span="16">
+        <el-col :span="8">
+          <el-form-item label="单位" prop="deptId">
+            <el-tree-select
+              v-model="formData.deptId"
+              :data="deptIdTreeData"
+              :props="defaultProps"
+              :render-after-expand="false"
+              check-on-click-node
+              check-strictly
+              style="width: 240px"
+              @change="handleDeptChange"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :span="8">
           <el-form-item label="备注" prop="remark">
             <el-input
               type="textarea"
@@ -61,6 +75,8 @@
 <script setup lang="ts">
 import { StockCheckApi, StockCheckVO } from '@/api/erp/stock/check'
 import StockCheckItemForm from './components/StockCheckItemForm.vue'
+import {defaultProps, handleTree} from "@/utils/tree";
+import * as DeptApi from "@/api/system/dept";
 
 /** ERP 其它盘点单表单 */
 defineOptions({ name: 'StockCheckForm' })
@@ -78,24 +94,33 @@ const formData = ref({
   checkTime: undefined,
   remark: undefined,
   fileUrl: '',
-  items: []
+  items: [],
+  deptId: undefined
 })
 const formRules = reactive({
-  checkTime: [{ required: true, message: '盘点时间不能为空', trigger: 'blur' }]
+  checkTime: [{ required: true, message: '盘点时间不能为空', trigger: 'blur' }],
+  deptId: [{required: true, message: '单位不能为空', trigger: 'blur'}]
 })
 const disabled = computed(() => formType.value === 'detail')
 const formRef = ref() // 表单 Ref
+const deptIdTreeData = ref<any[]>([]) // 部门树形结构
 
 /** 子表的表单 */
 const subTabsName = ref('item')
 const itemFormRef = ref()
 
 /** 打开弹窗 */
-const open = async (type: string, id?: number) => {
+const open = async (row , type: string, id?: number) => {
   dialogVisible.value = true
   dialogTitle.value = t('action.' + type)
   formType.value = type
   resetForm()
+  await getDeptIdTreeData()
+  if(row != undefined && row.deptId != undefined) {
+    if (itemFormRef.value) {
+      await itemFormRef.value.resetWarehouseList(false, row.deptId)
+    }
+  }
   // 修改时，设置数据
   if (id) {
     formLoading.value = true
@@ -107,6 +132,18 @@ const open = async (type: string, id?: number) => {
   }
 }
 defineExpose({ open }) // 提供 open 方法，用于打开弹窗
+
+/** 获取有权限的部门 */
+const getDeptIdTreeData = async () => {
+  deptIdTreeData.value = handleTree(await DeptApi.getSimpleDeptList())
+}
+
+/** 部门更改时 */
+const handleDeptChange = (newDeptId: number) => {
+  if (itemFormRef.value) {
+    itemFormRef.value.resetWarehouseList(true, newDeptId)
+  }
+}
 
 /** 提交表单 */
 const emit = defineEmits(['success']) // 定义 success 事件，用于操作成功后的回调
@@ -141,7 +178,8 @@ const resetForm = () => {
     checkTime: undefined,
     remark: undefined,
     fileUrl: undefined,
-    items: []
+    items: [],
+    deptId: undefined
   }
   formRef.value?.resetFields()
 }

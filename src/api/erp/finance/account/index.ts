@@ -9,6 +9,7 @@ export interface AccountVO {
   sort: number // 排序
   defaultStatus: boolean // 是否默认
   name: string // 账户名称
+  deptId: number // 部门编号
 }
 
 // ERP 结算账户 API

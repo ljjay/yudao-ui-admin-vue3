@@ -8,7 +8,7 @@
       label-width="100px"
       v-loading="formLoading"
     >
-      <el-form-item label="部门" prop="deptId">
+      <el-form-item label="单位" prop="deptId">
         <el-tree-select
           v-model="formData.deptId"
           :data="deptIdTreeData"

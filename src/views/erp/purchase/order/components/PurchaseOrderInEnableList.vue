@@ -141,10 +141,14 @@ const queryParams = reactive({
   no: undefined,
   productId: undefined,
   orderTime: [],
-  inEnable: true
+  inEnable: true,
+  deptIds: undefined
 })
 const queryFormRef = ref() // 搜索的表单
 const productList = ref<ProductVO[]>([]) // 产品列表
+const inDeptId = {
+  deptId: undefined // 传入部门 ID
+}
 
 /** 选中行 */
 const currentRowValue = ref(undefined) // 选中行的 value
@@ -154,8 +158,9 @@ const handleCurrentChange = (row) => {
 }
 
 /** 打开弹窗 */
-const open = async () => {
+const open = async (deptId?: number) => {
   dialogVisible.value = true
+  inDeptId.deptId = deptId
   await nextTick() // 等待，避免 queryFormRef 为空
   // 加载可入库的订单列表
   await resetQuery()
@@ -181,6 +186,7 @@ const submitForm = () => {
 const getList = async () => {
   loading.value = true
   try {
+    queryParams.deptIds = inDeptId.deptId
     const data = await PurchaseOrderApi.getPurchaseOrderPage(queryParams)
     list.value = data.list
     total.value = data.total

@@ -136,10 +136,14 @@ const queryParams = reactive({
   productId: undefined,
   returnTime: [],
   refundEnable: true,
-  customerId: undefined
+  customerId: undefined,
+  deptIds: undefined
 })
 const queryFormRef = ref() // 搜索的表单
 const productList = ref<ProductVO[]>([]) // 产品列表
+const inDeptId = {
+  deptId: undefined // 传入部门 ID
+}
 
 /** 选中操作 */
 const selectionList = ref<SaleReturnVO[]>([])
@@ -148,8 +152,9 @@ const handleSelectionChange = (rows: SaleReturnVO[]) => {
 }
 
 /** 打开弹窗 */
-const open = async (customerId: number) => {
+const open = async (customerId: number,deptId: number) => {
   dialogVisible.value = true
+  inDeptId.deptId = deptId
   await nextTick() // 等待，避免 queryFormRef 为空
   // 加载列表
   queryParams.customerId = customerId
@@ -176,6 +181,7 @@ const submitForm = () => {
 const getList = async () => {
   loading.value = true
   try {
+    queryParams.deptIds = inDeptId.deptId
     const data = await SaleReturnApi.getSaleReturnPage(queryParams)
     list.value = data.list
     total.value = data.total

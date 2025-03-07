@@ -9,6 +9,7 @@ export interface StockCheckVO {
   totalPrice: number // 合计金额，单位：元
   status: number // 状态
   remark: string // 备注
+  deptId: number // 部门编号
 }
 
 // ERP 库存盘点单 API

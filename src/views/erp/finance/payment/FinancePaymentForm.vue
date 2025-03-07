@@ -61,7 +61,22 @@
             </el-select>
           </el-form-item>
         </el-col>
-        <el-col :span="16">
+        <el-col :span="8">
+          <el-form-item label="单位" prop="deptId">
+            <el-tree-select
+              ref="deptTreeSelectRef"
+              v-model="formData.deptId"
+              :data="deptIdTreeData"
+              :props="defaultProps"
+              :render-after-expand="false"
+              check-on-click-node
+              check-strictly
+              style="width: 240px"
+              @change="handleDeptChange"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :span="8">
           <el-form-item label="备注" prop="remark">
             <el-input
               type="textarea"
@@ -84,6 +99,7 @@
             <FinancePaymentItemForm
               ref="itemFormRef"
               :supplier-id="formData.supplierId"
+              :dept-id="formData.deptId"
               :items="formData.items"
               :disabled="disabled"
             />
@@ -151,6 +167,8 @@ import { SupplierApi, SupplierVO } from '@/api/erp/purchase/supplier'
 import { erpPriceInputFormatter, erpPriceMultiply } from '@/utils'
 import * as UserApi from '@/api/system/user'
 import { AccountApi, AccountVO } from '@/api/erp/finance/account'
+import {defaultProps, handleTree} from "@/utils/tree";
+import * as DeptApi from "@/api/system/dept";
 
 /** ERP 付款单表单 */
 defineOptions({ name: 'FinancePaymentForm' })
@@ -174,17 +192,20 @@ const formData = ref({
   discountPrice: 0,
   paymentPrice: 0,
   items: [],
-  no: undefined // 订单单号，后端返回
+  no: undefined, // 订单单号，后端返回
+  deptId: undefined
 })
 const formRules = reactive({
   supplierId: [{ required: true, message: '供应商不能为空', trigger: 'blur' }],
-  paymentTime: [{ required: true, message: '订单时间不能为空', trigger: 'blur' }]
+  paymentTime: [{ required: true, message: '订单时间不能为空', trigger: 'blur' }],
+  deptId: [{required: true, message: '单位不能为空', trigger: 'blur'}]
 })
 const disabled = computed(() => formType.value === 'detail')
 const formRef = ref() // 表单 Ref
 const supplierList = ref<SupplierVO[]>([]) // 供应商列表
 const accountList = ref<AccountVO[]>([]) // 账户列表
 const userList = ref<UserApi.UserVO[]>([]) // 用户列表
+const deptIdTreeData = ref<any[]>([]) // 部门树形结构
 
 /** 子表的表单 */
 const subTabsName = ref('item')
@@ -205,11 +226,12 @@ watch(
 )
 
 /** 打开弹窗 */
-const open = async (type: string, id?: number) => {
+const open = async (row , type: string, id?: number) => {
   dialogVisible.value = true
   dialogTitle.value = t('action.' + type)
   formType.value = type
   resetForm()
+  await getDeptIdTreeData()
   // 修改时，设置数据
   if (id) {
     formLoading.value = true
@@ -231,6 +253,19 @@ const open = async (type: string, id?: number) => {
   }
 }
 defineExpose({ open }) // 提供 open 方法，用于打开弹窗
+
+/** 获取有权限的部门 */
+const getDeptIdTreeData = async () => {
+  deptIdTreeData.value = handleTree(await DeptApi.getSimpleDeptList())
+}
+
+/** 部门更改时 */
+const handleDeptChange = (newDeptId: number) => {
+  // 清空关联入库单
+  formData.value.items = []
+}
+
+const deptTreeSelectRef = ref()  // 部门选择控件引用
 
 /** 提交表单 */
 const emit = defineEmits(['success']) // 定义 success 事件，用于操作成功后的回调
@@ -271,7 +306,8 @@ const resetForm = () => {
     discountPrice: 0,
     paymentPrice: 0,
     items: [],
-    no: undefined
+    no: undefined,
+    deptId: undefined
   }
   formRef.value?.resetFields()
 }

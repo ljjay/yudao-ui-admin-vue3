@@ -10,6 +10,19 @@
       :inline="true"
       label-width="68px"
     >
+      <!-- 部门选择下拉框 tree 控件     -->
+      <el-form-item label="单位" prop="deptId">
+        <el-tree-select
+          v-model="queryParams.deptIds"
+          :data="deptIdTreeData"
+          :props="defaultProps"
+          multiple
+          :render-after-expand="false"
+          check-on-click-node
+          check-strictly
+          style="width: 240px"
+        />
+      </el-form-item>
       <el-form-item label="入库单号" prop="no">
         <el-input
           v-model="queryParams.no"
@@ -161,7 +174,7 @@
         <el-button
           type="primary"
           plain
-          @click="openForm('create')"
+          @click="openForm(undefined,'create')"
           v-hasPermi="['erp:purchase-in:create']"
         >
           <Icon icon="ep:plus" class="mr-5px" /> 新增
@@ -198,6 +211,7 @@
       @selection-change="handleSelectionChange"
     >
       <el-table-column width="30" label="选择" type="selection" />
+      <el-table-column label="单位" align="center" prop="deptName" />
       <el-table-column min-width="180" label="入库单号" align="center" prop="no" />
       <el-table-column label="产品信息" align="center" prop="productNames" min-width="200" />
       <el-table-column label="供应商" align="center" prop="supplierName" />
@@ -244,7 +258,7 @@
         <template #default="scope">
           <el-button
             link
-            @click="openForm('detail', scope.row.id)"
+            @click="openForm(scope.row,'detail', scope.row.id)"
             v-hasPermi="['erp:purchase-in:query']"
           >
             详情
@@ -252,7 +266,7 @@
           <el-button
             link
             type="primary"
-            @click="openForm('update', scope.row.id)"
+            @click="openForm(scope.row,'update', scope.row.id)"
             v-hasPermi="['erp:purchase-in:update']"
             :disabled="scope.row.status === 20"
           >
@@ -317,6 +331,8 @@ import {
 import { WarehouseApi, WarehouseVO } from '@/api/erp/stock/warehouse'
 import { AccountApi, AccountVO } from '@/api/erp/finance/account'
 import { SupplierApi, SupplierVO } from '@/api/erp/purchase/supplier'
+import {defaultProps, handleTree} from "@/utils/tree";
+import * as DeptApi from "@/api/system/dept";
 
 /** ERP 销售入库列表 */
 defineOptions({ name: 'ErpPurchaseIn' })
@@ -340,7 +356,8 @@ const queryParams = reactive({
   accountId: undefined,
   status: undefined,
   remark: undefined,
-  creator: undefined
+  creator: undefined,
+  deptIds: []
 })
 const queryFormRef = ref() // 搜索的表单
 const exportLoading = ref(false) // 导出的加载中
@@ -349,6 +366,7 @@ const supplierList = ref<SupplierVO[]>([]) // 供应商列表
 const userList = ref<UserVO[]>([]) // 用户列表
 const warehouseList = ref<WarehouseVO[]>([]) // 仓库列表
 const accountList = ref<AccountVO[]>([]) // 账户列表
+const deptIdTreeData = ref<any[]>([]) // 部门树形结构
 
 /** 查询列表 */
 const getList = async () => {
@@ -376,8 +394,8 @@ const resetQuery = () => {
 
 /** 添加/修改操作 */
 const formRef = ref()
-const openForm = (type: string, id?: number) => {
-  formRef.value.open(type, id)
+const openForm = (row,type: string, id?: number) => {
+  formRef.value.open(row,type, id)
 }
 
 /** 删除按钮操作 */
@@ -428,9 +446,16 @@ const handleSelectionChange = (rows: PurchaseInVO[]) => {
   selectionList.value = rows
 }
 
+/** 获取有权限的部门 */
+const getDeptIdTreeData = async () => {
+  deptIdTreeData.value = handleTree(await DeptApi.getSimpleDeptList())
+}
+
 /** 初始化 **/
 onMounted(async () => {
   await getList()
+  // 加载有权限的部门
+  await getDeptIdTreeData()
   // 加载产品、仓库列表、供应商
   productList.value = await ProductApi.getProductSimpleList()
   supplierList.value = await SupplierApi.getSupplierSimpleList()

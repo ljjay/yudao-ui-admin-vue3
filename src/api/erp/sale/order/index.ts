@@ -12,6 +12,7 @@ export interface SaleOrderVO {
   remark: string // 备注
   outCount: number // 销售出库数量
   returnCount: number // 销售退货数量
+  deptId: number // 部门编号
 }
 
 // ERP 销售订单 API

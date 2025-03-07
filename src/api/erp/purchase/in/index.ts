@@ -12,6 +12,7 @@ export interface PurchaseInVO {
   remark: string // 备注
   outCount: number // 采购出库数量
   returnCount: number // 采购退货数量
+  deptId: number // 部门编号
 }
 
 // ERP 采购入库 API

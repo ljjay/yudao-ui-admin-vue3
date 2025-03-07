@@ -105,7 +105,7 @@
             <el-input-number
               v-model="row.productPrice"
               controls-position="right"
-              :min="0.01"
+              :min="0"
               :precision="2"
               class="!w-100%"
             />
@@ -194,6 +194,18 @@ const formRef = ref([]) // 表单 Ref
 const warehouseList = ref<WarehouseVO[]>([]) // 仓库列表
 const defaultWarehouse = ref<WarehouseVO>(undefined) // 默认仓库
 
+// 新增：重置仓库列表的方法
+const resetWarehouseList = async (isReset: boolean ,newDeptId: number) => {
+  warehouseList.value = await WarehouseApi.getWarehouseSimpleListByDeptId(newDeptId)
+  defaultWarehouse.value = warehouseList.value.find((item) => item.defaultStatus)
+  // 新增：清空所有行仓库的选中
+  if (isReset) {
+    formData.value.forEach(row => {
+      row.warehouseId = undefined
+    })
+  }
+}
+
 /** 初始化设置出库项 */
 watch(
   () => props.items,
@@ -277,24 +289,32 @@ const handleDelete = (index: number) => {
   formData.value.splice(index, 1)
 }
 
+/** 处理仓库变更 */
+const onChangeWarehouse = (warehouseId, row) => {
+  // 加载库存
+  setStockCount(row)
+}
+
 /** 加载库存 */
 const setStockCount = async (row: any) => {
   if (!row.productId) {
     return
   }
-  const count = await StockApi.getStockCount(row.productId)
-  row.stockCount = count || 0
+  //const count = await StockApi.getStockCount(row.productId)
+  //row.stockCount = count || 0
+  const count = await StockApi.getStock2(row.productId,row.warehouseId)
+  row.stockCount = count ? count.count : 0
 }
 
 /** 表单校验 */
 const validate = () => {
   return formRef.value.validate()
 }
-defineExpose({ validate })
+defineExpose({ validate ,resetWarehouseList})
 
 /** 初始化 */
 onMounted(async () => {
-  warehouseList.value = await WarehouseApi.getWarehouseSimpleList()
-  defaultWarehouse.value = warehouseList.value.find((item) => item.defaultStatus)
+  //warehouseList.value = await WarehouseApi.getWarehouseSimpleList()
+  //defaultWarehouse.value = warehouseList.value.find((item) => item.defaultStatus)
 })
 </script>

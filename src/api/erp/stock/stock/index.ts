@@ -36,6 +36,11 @@ export const StockApi = {
     return await request.get({ url: `/erp/stock/get-count`, params: { productId } })
   },
 
+  // 获得产品库存数量
+  getStockCountByDept: async (productId: number , deptId: number) => {
+    return await request.get({ url: `/erp/stock/get-count-by-dept`, params: { productId, deptId} })
+  },
+
   // 导出产品库存 Excel
   exportStock: async (params) => {
     return await request.download({ url: `/erp/stock/export-excel`, params })

@@ -55,7 +55,22 @@
             </el-select>
           </el-form-item>
         </el-col>
-        <el-col :span="16">
+        <el-col :span="8">
+          <el-form-item label="单位" prop="deptId">
+            <el-tree-select
+              ref="deptTreeSelectRef"
+              v-model="formData.deptId"
+              :data="deptIdTreeData"
+              :props="defaultProps"
+              :render-after-expand="false"
+              check-on-click-node
+              check-strictly
+              style="width: 240px"
+              @change="handleDeptChange"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :span="8">
           <el-form-item label="备注" prop="remark">
             <el-input
               type="textarea"
@@ -170,6 +185,8 @@ import PurchaseOrderInEnableList from '@/views/erp/purchase/order/components/Pur
 import { PurchaseOrderVO } from '@/api/erp/purchase/order'
 import * as UserApi from '@/api/system/user'
 import { SupplierApi, SupplierVO } from '@/api/erp/purchase/supplier'
+import {defaultProps, handleTree} from "@/utils/tree";
+import * as DeptApi from "@/api/system/dept";
 
 /** ERP 销售入库表单 */
 defineOptions({ name: 'PurchaseInForm' })
@@ -194,17 +211,20 @@ const formData = ref({
   otherPrice: 0,
   orderNo: undefined,
   items: [],
-  no: undefined // 入库单号，后端返回
+  no: undefined, // 入库单号，后端返回
+  deptId: undefined
 })
 const formRules = reactive({
   supplierId: [{ required: true, message: '供应商不能为空', trigger: 'blur' }],
-  inTime: [{ required: true, message: '入库时间不能为空', trigger: 'blur' }]
+  inTime: [{ required: true, message: '入库时间不能为空', trigger: 'blur' }],
+  deptId: [{required: true, message: '单位不能为空', trigger: 'blur'}]
 })
 const disabled = computed(() => formType.value === 'detail')
 const formRef = ref() // 表单 Ref
 const supplierList = ref<SupplierVO[]>([]) // 供应商列表
 const accountList = ref<AccountVO[]>([]) // 账户列表
 const userList = ref<UserApi.UserVO[]>([]) // 用户列表
+const deptIdTreeData = ref<any[]>([]) // 部门树形结构
 
 /** 子表的表单 */
 const subTabsName = ref('item')
@@ -228,11 +248,17 @@ watch(
 )
 
 /** 打开弹窗 */
-const open = async (type: string, id?: number) => {
+const open = async (row , type: string, id?: number) => {
   dialogVisible.value = true
   dialogTitle.value = t('action.' + type)
   formType.value = type
   resetForm()
+  await getDeptIdTreeData()
+  if(row != undefined && row.deptId != undefined) {
+    if (itemFormRef.value) {
+      await itemFormRef.value.resetWarehouseList(false, row.deptId)
+    }
+  }
   // 修改时，设置数据
   if (id) {
     formLoading.value = true
@@ -255,10 +281,43 @@ const open = async (type: string, id?: number) => {
 }
 defineExpose({ open }) // 提供 open 方法，用于打开弹窗
 
+/** 获取有权限的部门 */
+const getDeptIdTreeData = async () => {
+  deptIdTreeData.value = handleTree(await DeptApi.getSimpleDeptList())
+}
+
+/** 部门更改时 */
+const handleDeptChange = (newDeptId: number) => {
+  // 清空关联订单
+
+    formData.value.orderId =  undefined
+    formData.value.orderNo =  undefined
+    formData.value.supplierId =  undefined
+    formData.value.accountId =  undefined
+    formData.value.discountPercent =  0
+    formData.value.remark =  undefined
+    formData.value.fileUrl =  undefined
+    formData.value.items = []
+
+  if (itemFormRef.value) {
+    itemFormRef.value.resetWarehouseList(true, newDeptId)
+  }
+}
+
+const deptTreeSelectRef = ref()  // 部门选择控件引用
 /** 打开【可入库的订单列表】弹窗 */
 const purchaseOrderInEnableListRef = ref() // 可入库的订单列表 Ref
-const openPurchaseOrderInEnableList = () => {
-  purchaseOrderInEnableListRef.value.open()
+const openPurchaseOrderInEnableList = async () => {
+  //如果deptId未选择则提示需要选择并返回单位焦点
+  if (!formData.value.deptId) {
+    message.warning('请选择单位')
+    //设置单位控件为焦点
+    await nextTick() // 等待 DOM 渲染完成
+    deptTreeSelectRef.value?.focus() // 调用组件的 focus 方法
+
+    return
+  }
+  purchaseOrderInEnableListRef.value.open(formData.value.deptId)
 }
 
 const handlePurchaseOrderChange = (order: PurchaseOrderVO) => {
@@ -318,7 +377,8 @@ const resetForm = () => {
     discountPrice: 0,
     totalPrice: 0,
     otherPrice: 0,
-    items: []
+    items: [],
+    deptId: undefined
   }
   formRef.value?.resetFields()
 }

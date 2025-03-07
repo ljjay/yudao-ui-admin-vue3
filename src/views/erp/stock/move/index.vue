@@ -14,7 +14,7 @@
       label-width="68px"
     >
       <!-- 部门选择下拉框 tree 控件     -->
-      <el-form-item label="单位" prop="deptId">
+      <el-form-item label="调出单位" prop="deptId">
         <el-tree-select
           v-model="queryParams.deptIds"
           :data="deptIdTreeData"
@@ -27,7 +27,7 @@
         />
       </el-form-item>
       <!-- 调出部门选择下拉框 tree 控件     -->
-      <el-form-item label="调出单位" prop="toDeptId">
+      <el-form-item label="调入单位" prop="toDeptId">
         <el-tree-select
           v-model="queryParams.toDeptIds"
           :data="toDeptIdTreeData"
