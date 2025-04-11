@@ -37,6 +37,13 @@
           </el-radio>
         </el-radio-group>
       </el-form-item>
+      <ContentWrap>
+        <el-tabs v-model="subTabsName" class="-mt-15px -mb-10px">
+          <el-tab-pane label="类型指标明细" name="item">
+            <CateItemForm ref="itemFormRef" :items="formData.items" :disabled="formLoading" />
+          </el-tab-pane>
+        </el-tabs>
+      </ContentWrap>
     </el-form>
     <template #footer>
       <el-button @click="submitForm" type="primary" :disabled="formLoading">确 定</el-button>
@@ -49,6 +56,7 @@ import { getIntDictOptions, DICT_TYPE } from '@/utils/dict'
 import { ProductCategoryApi, ProductCategoryVO } from '@/api/erp/product/category'
 import { defaultProps, handleTree } from '@/utils/tree'
 import { CommonStatusEnum } from '@/utils/constants'
+import CateItemForm from './components/cateItemForm.vue'
 
 /** ERP 产品分类 表单 */
 defineOptions({ name: 'ProductCategoryForm' })
@@ -66,7 +74,8 @@ const formData = ref({
   name: undefined,
   code: undefined,
   sort: undefined,
-  status: CommonStatusEnum.ENABLE
+  status: CommonStatusEnum.ENABLE,
+  items: []
 })
 const formRules = reactive({
   parentId: [{ required: true, message: '上级编号不能为空', trigger: 'blur' }],
@@ -77,6 +86,8 @@ const formRules = reactive({
 })
 const formRef = ref() // 表单 Ref
 const productCategoryTree = ref() // 树形结构
+
+const subTabsName = ref('item')
 
 /** 打开弹窗 */
 const open = async (type: string, id?: number) => {
