@@ -255,32 +255,8 @@ const remainingRouter: AppRouteRecordRaw[] = [
         }
       },
       {
-        path: 'manager/model/edit',
-        component: () => import('@/views/bpm/model/editor/index.vue'),
-        name: 'BpmModelEditor',
-        meta: {
-          noCache: true,
-          hidden: true,
-          canTo: true,
-          title: '设计流程',
-          activeMenu: '/bpm/manager/model'
-        }
-      },
-      {
-        path: 'manager/simple/model',
-        component: () => import('@/views/bpm/simple/SimpleModelDesign.vue'),
-        name: 'SimpleModelDesign',
-        meta: {
-          noCache: true,
-          hidden: true,
-          canTo: true,
-          title: '仿钉钉设计流程',
-          activeMenu: '/bpm/manager/model'
-        }
-      },
-      {
         path: 'manager/definition',
-        component: () => import('@/views/bpm/definition/index.vue'),
+        component: () => import('@/views/bpm/model/definition/index.vue'),
         name: 'BpmProcessDefinition',
         meta: {
           noCache: true,
@@ -356,7 +332,6 @@ const remainingRouter: AppRouteRecordRaw[] = [
         }
       },
       {
-        // TODO @zws：1）建议，在加一个路由。然后标题是“复制流程”，这样体验会好点；2）复制出来的数据，在名字前面，加“副本 ”，和钉钉保持一致！
         path: 'manager/model/:type/:id',
         component: () => import('@/views/bpm/model/form/index.vue'),
         name: 'BpmModelUpdate',
@@ -501,9 +476,9 @@ const remainingRouter: AppRouteRecordRaw[] = [
         name: 'DiyTemplateDecorate',
         meta: {
           title: '模板装修',
-          noCache: true,
+          noCache: false,
           hidden: true,
-          activeMenu: '/mall/promotion/diy/template'
+          activeMenu: '/mall/promotion/diy-template/diy-template'
         },
         component: () => import('@/views/mall/promotion/diy/template/decorate.vue')
       },
@@ -512,9 +487,9 @@ const remainingRouter: AppRouteRecordRaw[] = [
         name: 'DiyPageDecorate',
         meta: {
           title: '页面装修',
-          noCache: true,
+          noCache: false,
           hidden: true,
-          activeMenu: '/mall/promotion/diy/page'
+          activeMenu: '/mall/promotion/diy-template/diy-page'
         },
         component: () => import('@/views/mall/promotion/diy/page/decorate.vue')
       }
@@ -633,6 +608,89 @@ const remainingRouter: AppRouteRecordRaw[] = [
           icon: 'ep:home-filled',
           noCache: false
         }
+      },
+      {
+        path: 'knowledge/document',
+        component: () => import('@/views/ai/knowledge/document/index.vue'),
+        name: 'AiKnowledgeDocument',
+        meta: {
+          title: '知识库文档',
+          icon: 'ep:document',
+          noCache: false,
+          activeMenu: '/ai/knowledge'
+        }
+      },
+      {
+        path: 'knowledge/document/create',
+        component: () => import('@/views/ai/knowledge/document/form/index.vue'),
+        name: 'AiKnowledgeDocumentCreate',
+        meta: {
+          title: '创建文档',
+          icon: 'ep:plus',
+          noCache: true,
+          hidden: true,
+          activeMenu: '/ai/knowledge'
+        }
+      },
+      {
+        path: 'knowledge/document/update',
+        component: () => import('@/views/ai/knowledge/document/form/index.vue'),
+        name: 'AiKnowledgeDocumentUpdate',
+        meta: {
+          title: '修改文档',
+          icon: 'ep:edit',
+          noCache: true,
+          hidden: true,
+          activeMenu: '/ai/knowledge'
+        }
+      },
+      {
+        path: 'knowledge/retrieval',
+        component: () => import('@/views/ai/knowledge/knowledge/retrieval/index.vue'),
+        name: 'AiKnowledgeRetrieval',
+        meta: {
+          title: '文档召回测试',
+          icon: 'ep:search',
+          noCache: true,
+          hidden: true,
+          activeMenu: '/ai/knowledge'
+        }
+      },
+      {
+        path: 'knowledge/segment',
+        component: () => import('@/views/ai/knowledge/segment/index.vue'),
+        name: 'AiKnowledgeSegment',
+        meta: {
+          title: '知识库分段',
+          icon: 'ep:tickets',
+          noCache: true,
+          hidden: true,
+          activeMenu: '/ai/knowledge'
+        }
+      },
+      {
+        path: 'console/workflow/create',
+        component: () => import('@/views/ai/workflow/form/index.vue'),
+        name: 'AiWorkflowCreate',
+        meta: {
+          noCache: true,
+          hidden: true,
+          canTo: true,
+          title: '设计 AI 工作流',
+          activeMenu: '/ai/console/workflow'
+        }
+      },
+      {
+        path: 'console/workflow/:type/:id',
+        component: () => import('@/views/ai/workflow/form/index.vue'),
+        name: 'AiWorkflowUpdate',
+        meta: {
+          noCache: true,
+          hidden: true,
+          canTo: true,
+          title: '设计 AI 工作流',
+          activeMenu: '/ai/console/workflow'
+        }
       }
     ]
   },
@@ -655,15 +713,15 @@ const remainingRouter: AppRouteRecordRaw[] = [
     },
     children: [
       {
-        path: 'product/detail/:id',
+        path: 'product/product/detail/:id',
         name: 'IoTProductDetail',
         meta: {
           title: '产品详情',
           noCache: true,
           hidden: true,
-          activeMenu: '/iot/product'
+          activeMenu: '/iot/device/product'
         },
-        component: () => import('@/views/iot/product/detail/index.vue')
+        component: () => import('@/views/iot/product/product/detail/index.vue')
       },
       {
         path: 'device/detail/:id',
@@ -672,9 +730,20 @@ const remainingRouter: AppRouteRecordRaw[] = [
           title: '设备详情',
           noCache: true,
           hidden: true,
-          activeMenu: '/iot/device'
+          activeMenu: '/iot/device/device'
         },
-        component: () => import('@/views/iot/device/detail/index.vue')
+        component: () => import('@/views/iot/device/device/detail/index.vue')
+      },
+      {
+        path: 'plugin/detail/:id',
+        name: 'IoTPluginDetail',
+        meta: {
+          title: '插件详情',
+          noCache: true,
+          hidden: true,
+          activeMenu: '/iot/plugin'
+        },
+        component: () => import('@/views/iot/plugin/detail/index.vue')
       }
     ]
   }

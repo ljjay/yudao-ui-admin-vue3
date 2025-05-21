@@ -37,13 +37,19 @@
             {{ getApprovalNodeTime(activity) }}
           </div>
         </div>
+        <div v-if="activity.nodeType === NodeType.CHILD_PROCESS_NODE">
+          <el-button type="primary" plain size="small" @click="handleChildProcess(activity)">
+            查看子流程
+          </el-button>
+        </div>
         <!-- 需要自定义选择审批人 -->
         <div
           class="flex flex-wrap gap2 items-center"
           v-if="
             isEmpty(activity.tasks) &&
             isEmpty(activity.candidateUsers) &&
-            CandidateStrategy.START_USER_SELECT === activity.candidateStrategy
+            (CandidateStrategy.START_USER_SELECT === activity.candidateStrategy ||
+              CandidateStrategy.APPROVE_USER_SELECT === activity.candidateStrategy)
           "
         >
           <!--  && activity.nodeType === NodeType.USER_TASK_NODE -->
@@ -121,6 +127,7 @@
                 "
                 class="text-#a5a5a5 text-13px mt-1 w-full bg-#f8f8fa p2 rounded-md"
               >
+                <!-- TODO lesan：这里如果是办理，需要是办理意见 -->
                 审批意见：{{ task.reason }}
               </div>
               <div
@@ -179,6 +186,8 @@ import copySvg from '@/assets/svgs/bpm/copy.svg'
 import conditionSvg from '@/assets/svgs/bpm/condition.svg'
 import parallelSvg from '@/assets/svgs/bpm/parallel.svg'
 import finishSvg from '@/assets/svgs/bpm/finish.svg'
+import transactorSvg from '@/assets/svgs/bpm/transactor.svg'
+import childProcessSvg from '@/assets/svgs/bpm/child-process.svg'
 
 defineOptions({ name: 'BpmProcessInstanceTimeline' })
 withDefaults(
@@ -190,6 +199,7 @@ withDefaults(
     showStatusIcon: true // 默认值为 true
   }
 )
+const { push } = useRouter() // 路由
 
 // 审批节点
 const statusIconMap2 = {
@@ -240,12 +250,16 @@ const nodeTypeSvgMap = {
   [NodeType.START_USER_NODE]: { color: '#909398', svg: starterSvg },
   // 审批人节点
   [NodeType.USER_TASK_NODE]: { color: '#ff943e', svg: auditorSvg },
+  // 办理人节点
+  [NodeType.TRANSACTOR_NODE]: { color: '#ff943e', svg: transactorSvg },
   // 抄送人节点
   [NodeType.COPY_TASK_NODE]: { color: '#3296fb', svg: copySvg },
   // 条件分支节点
   [NodeType.CONDITION_NODE]: { color: '#14bb83', svg: conditionSvg },
   // 并行分支节点
-  [NodeType.PARALLEL_BRANCH_NODE]: { color: '#14bb83', svg: parallelSvg }
+  [NodeType.PARALLEL_BRANCH_NODE]: { color: '#14bb83', svg: parallelSvg },
+  // 子流程节点
+  [NodeType.CHILD_PROCESS_NODE]: { color: '#14bb83', svg: childProcessSvg }
 }
 
 // 只有只有状态是 -1、0、1 才展示头像右小角状态小icon
@@ -264,6 +278,8 @@ const getApprovalNodeIcon = (taskStatus: number, nodeType: NodeType) => {
   if (
     nodeType === NodeType.START_USER_NODE ||
     nodeType === NodeType.USER_TASK_NODE ||
+    nodeType === NodeType.TRANSACTOR_NODE ||
+    nodeType === NodeType.CHILD_PROCESS_NODE ||
     nodeType === NodeType.END_EVENT_NODE
   ) {
     return statusIconMap[taskStatus]?.icon
@@ -299,5 +315,16 @@ const customApproveUsers: any = ref({}) // key：activityId，value：用户列�
 const handleUserSelectConfirm = (activityId: string, userList: any[]) => {
   customApproveUsers.value[activityId] = userList || []
   emit('selectUserConfirm', activityId, userList)
+}
+
+/** 跳转子流程 */
+const handleChildProcess = (activity: any) => {
+  // TODO @lesan：貌似跳不过去？！
+  push({
+    name: 'BpmProcessInstanceDetail',
+    query: {
+      id: activity.processInstanceId
+    }
+  })
 }
 </script>

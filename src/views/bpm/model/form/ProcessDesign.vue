@@ -18,6 +18,7 @@
       :model-key="modelData.key"
       :model-name="modelData.name"
       :start-user-ids="modelData.startUserIds"
+      :start-dept-ids="modelData.startDeptIds"
       @success="handleDesignSuccess"
     />
   </template>
@@ -25,7 +26,7 @@
 
 <script lang="ts" setup>
 import { BpmModelType } from '@/utils/constants'
-import BpmModelEditor from '../editor/index.vue'
+import BpmModelEditor from './editor/index.vue'
 import SimpleModelDesign from '../../simple/SimpleModelDesign.vue'
 
 // 创建本地数据副本

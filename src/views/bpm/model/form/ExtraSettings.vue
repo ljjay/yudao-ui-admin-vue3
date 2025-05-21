@@ -140,6 +140,86 @@
         </el-select>
       </div>
     </el-form-item>
+    <el-form-item class="mb-20px">
+      <template #label>
+        <el-text size="large" tag="b">流程前置通知</el-text>
+      </template>
+      <div class="flex flex-col w-100%">
+        <div class="flex">
+          <el-switch
+            v-model="processBeforeTriggerEnable"
+            @change="handleProcessBeforeTriggerEnableChange"
+          />
+          <div class="ml-80px">流程启动后通知</div>
+        </div>
+        <HttpRequestSetting
+          v-if="processBeforeTriggerEnable"
+          v-model:setting="modelData.processBeforeTriggerSetting"
+          :responseEnable="true"
+          :formItemPrefix="'processBeforeTriggerSetting'"
+        />
+      </div>
+    </el-form-item>
+    <el-form-item class="mb-20px">
+      <template #label>
+        <el-text size="large" tag="b">流程后置通知</el-text>
+      </template>
+      <div class="flex flex-col w-100%">
+        <div class="flex">
+          <el-switch
+            v-model="processAfterTriggerEnable"
+            @change="handleProcessAfterTriggerEnableChange"
+          />
+          <div class="ml-80px">流程结束后通知</div>
+        </div>
+        <HttpRequestSetting
+          v-if="processAfterTriggerEnable"
+          v-model:setting="modelData.processAfterTriggerSetting"
+          :responseEnable="true"
+          :formItemPrefix="'processAfterTriggerSetting'"
+        />
+      </div>
+    </el-form-item>
+    <el-form-item class="mb-20px">
+      <template #label>
+        <el-text size="large" tag="b">任务前置通知</el-text>
+      </template>
+      <div class="flex flex-col w-100%">
+        <div class="flex">
+          <el-switch
+            v-model="taskBeforeTriggerEnable"
+            @change="handleTaskBeforeTriggerEnableChange"
+          />
+          <div class="ml-80px">任务执行时通知</div>
+        </div>
+        <HttpRequestSetting
+          v-if="taskBeforeTriggerEnable"
+          v-model:setting="modelData.taskBeforeTriggerSetting"
+          :responseEnable="true"
+          :formItemPrefix="'taskBeforeTriggerSetting'"
+        />
+      </div>
+    </el-form-item>
+    <el-form-item class="mb-20px">
+      <template #label>
+        <el-text size="large" tag="b">任务后置通知</el-text>
+      </template>
+      <div class="flex flex-col w-100%">
+        <div class="flex">
+          <el-switch
+            v-model="taskAfterTriggerEnable"
+            @change="handleTaskAfterTriggerEnableChange"
+          />
+          <div class="ml-80px">任务结束后通知</div>
+        </div>
+        <HttpRequestSetting
+          v-if="taskAfterTriggerEnable"
+          v-model:setting="modelData.taskAfterTriggerSetting"
+          :responseEnable="true"
+          :formItemPrefix="'taskAfterTriggerSetting'"
+        />
+      </div>
+    </el-form-item>
   </el-form>
 </template>
 
@@ -149,6 +229,7 @@ import { BpmAutoApproveType, BpmModelFormType } from '@/utils/constants'
 import * as FormApi from '@/api/bpm/form'
 import { parseFormFields } from '@/components/FormCreate/src/utils'
 import { ProcessVariableEnum } from '@/components/SimpleProcessDesignerV2/src/consts'
+import HttpRequestSetting from '@/components/SimpleProcessDesignerV2/src/nodes-config/components/HttpRequestSetting.vue'
 
 const modelData = defineModel<any>()
 
@@ -204,6 +285,66 @@ const numberExample = computed(() => {
     return ''
   }
 })
+
+/** 是否开启流程前置通知 */
+const processBeforeTriggerEnable = ref(false)
+const handleProcessBeforeTriggerEnableChange = (val: boolean | string | number) => {
+  if (val) {
+    modelData.value.processBeforeTriggerSetting = {
+      url: '',
+      header: [],
+      body: [],
+      response: []
+    }
+  } else {
+    modelData.value.processBeforeTriggerSetting = null
+  }
+}
+
+/** 是否开启流程后置通知 */
+const processAfterTriggerEnable = ref(false)
+const handleProcessAfterTriggerEnableChange = (val: boolean | string | number) => {
+  if (val) {
+    modelData.value.processAfterTriggerSetting = {
+      url: '',
+      header: [],
+      body: [],
+      response: []
+    }
+  } else {
+    modelData.value.processAfterTriggerSetting = null
+  }
+}
+
+/** 是否开启任务前置通知 */
+const taskBeforeTriggerEnable = ref(false)
+const handleTaskBeforeTriggerEnableChange = (val: boolean | string | number) => {
+  if (val) {
+    modelData.value.taskBeforeTriggerSetting = {
+      url: '',
+      header: [],
+      body: [],
+      response: []
+    }
+  } else {
+    modelData.value.taskBeforeTriggerSetting = null
+  }
+}
+
+/** 是否开启任务后置通知 */
+const taskAfterTriggerEnable = ref(false)
+const handleTaskAfterTriggerEnableChange = (val: boolean | string | number) => {
+  if (val) {
+    modelData.value.taskAfterTriggerSetting = {
+      url: '',
+      header: [],
+      body: [],
+      response: []
+    }
+  } else {
+    modelData.value.taskAfterTriggerSetting = null
+  }
+}
 
 /** 表单选项 */
 const formField = ref<Array<{ field: string; title: string }>>([])
@@ -263,6 +404,18 @@ const initData = () => {
       enable: false,
       summary: []
     }
+  }
+  if (modelData.value.processBeforeTriggerSetting) {
+    processBeforeTriggerEnable.value = true
+  }
+  if (modelData.value.processAfterTriggerSetting) {
+    processAfterTriggerEnable.value = true
+  }
+  if (modelData.value.taskBeforeTriggerSetting) {
+    taskBeforeTriggerEnable.value = true
+  }
+  if (modelData.value.taskAfterTriggerSetting) {
+    taskAfterTriggerEnable.value = true
   }
 }
 defineExpose({ initData })

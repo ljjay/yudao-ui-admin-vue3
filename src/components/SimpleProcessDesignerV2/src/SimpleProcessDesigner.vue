@@ -25,7 +25,6 @@
 
 <script setup lang="ts">
 import SimpleProcessModel from './SimpleProcessModel.vue'
-import { updateBpmSimpleModel, getBpmSimpleModel } from '@/api/bpm/simple'
 import { SimpleFlowNode, NodeType, NodeId, NODE_DEFAULT_TEXT } from './consts'
 import { getModel } from '@/api/bpm/model'
 import { getForm, FormVO } from '@/api/bpm/form'
@@ -35,6 +34,7 @@ import * as DeptApi from '@/api/system/dept'
 import * as PostApi from '@/api/system/post'
 import * as UserApi from '@/api/system/user'
 import * as UserGroupApi from '@/api/bpm/userGroup'
+import { BpmModelFormType } from '@/utils/constants'
 
 defineOptions({
   name: 'SimpleProcessDesigner'
@@ -57,6 +57,11 @@ const props = defineProps({
   },
   // 可发起流程的人员编号
   startUserIds: {
+    type: Array,
+    required: false
+  },
+  // 可发起流程的部门编号
+  startDeptIds: {
     type: Array,
     required: false
   }
@@ -82,6 +87,7 @@ provide('deptList', deptOptions)
 provide('userGroupList', userGroupOptions)
 provide('deptTree', deptTreeOptions)
 provide('startUserIds', props.startUserIds)
+provide('startDeptIds', props.startDeptIds)
 provide('tasks', [])
 provide('processInstance', {})
 const message = useMessage() // 国际化
@@ -168,7 +174,7 @@ onMounted(async () => {
       const bpmnModel = await getModel(props.modelId)
       if (bpmnModel) {
         formType.value = bpmnModel.formType
-        if (formType.value === 10) {
+        if (formType.value === BpmModelFormType.NORMAL && bpmnModel.formId) {
           const bpmnForm = (await getForm(bpmnModel.formId)) as unknown as FormVO
           formFields.value = bpmnForm?.fields
         }
