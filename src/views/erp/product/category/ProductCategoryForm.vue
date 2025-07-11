@@ -40,7 +40,12 @@
       <ContentWrap>
         <el-tabs v-model="subTabsName" class="-mt-15px -mb-10px">
           <el-tab-pane label="类型指标明细" name="item">
-            <CateItemForm ref="itemFormRef" :items="formData.items" :disabled="formLoading" />
+            <CateItemForm
+              ref="itemFormRef"
+              :items="formData.items"
+              :disabled="formLoading"
+              :dept-id="formData.id"
+            />
           </el-tab-pane>
         </el-tabs>
       </ContentWrap>
@@ -74,8 +79,8 @@ const formData = ref({
   name: undefined,
   code: undefined,
   sort: undefined,
-  status: CommonStatusEnum.ENABLE,
-  items: []
+  items: [],
+  status: CommonStatusEnum.ENABLE
 })
 const formRules = reactive({
   parentId: [{ required: true, message: '上级编号不能为空', trigger: 'blur' }],
@@ -88,6 +93,7 @@ const formRef = ref() // 表单 Ref
 const productCategoryTree = ref() // 树形结构
 
 const subTabsName = ref('item')
+const itemFormRef = ref()
 
 /** 打开弹窗 */
 const open = async (type: string, id?: number) => {
@@ -140,7 +146,8 @@ const resetForm = () => {
     name: undefined,
     code: undefined,
     sort: undefined,
-    status: CommonStatusEnum.ENABLE
+    status: CommonStatusEnum.ENABLE,
+    items: []
   }
   formRef.value?.resetFields()
 }
