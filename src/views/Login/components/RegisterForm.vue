@@ -9,13 +9,13 @@
     label-width="120px"
     size="large"
   >
-    <el-row style="margin-right: -10px; margin-left: -10px">
-      <el-col :span="24" style="padding-right: 10px; padding-left: 10px">
+    <el-row class="mx-[-10px]">
+      <el-col :span="24" class="px-10px">
         <el-form-item>
-          <LoginFormTitle style="width: 100%" />
+          <LoginFormTitle class="w-full" />
         </el-form-item>
       </el-col>
-      <el-col :span="24" style="padding-right: 10px; padding-left: 10px">
+      <el-col :span="24" class="px-10px">
         <el-form-item v-if="registerData.tenantEnable === 'true'" prop="tenantName">
           <el-input
             v-model="registerData.registerForm.tenantName"
@@ -28,7 +28,7 @@
           />
         </el-form-item>
       </el-col>
-      <el-col :span="24" style="padding-right: 10px; padding-left: 10px">
+      <el-col :span="24" class="px-10px">
         <el-form-item prop="username">
           <el-input
             v-model="registerData.registerForm.username"
@@ -38,8 +38,8 @@
           />
         </el-form-item>
       </el-col>
-      <el-col :span="24" style="padding-right: 10px; padding-left: 10px">
-        <el-form-item prop="username">
+      <el-col :span="24" class="px-10px">
+        <el-form-item prop="nickname">
           <el-input
             v-model="registerData.registerForm.nickname"
             placeholder="昵称"
@@ -48,7 +48,7 @@
           />
         </el-form-item>
       </el-col>
-      <el-col :span="24" style="padding-right: 10px; padding-left: 10px">
+      <el-col :span="24" class="px-10px">
         <el-form-item prop="password">
           <el-input
             v-model="registerData.registerForm.password"
@@ -61,7 +61,7 @@
           />
         </el-form-item>
       </el-col>
-      <el-col :span="24" style="padding-right: 10px; padding-left: 10px">
+      <el-col :span="24" class="px-10px">
         <el-form-item prop="confirmPassword">
           <el-input
             v-model="registerData.registerForm.confirmPassword"
@@ -74,12 +74,12 @@
           />
         </el-form-item>
       </el-col>
-      <el-col :span="24" style="padding-right: 10px; padding-left: 10px">
+      <el-col :span="24" class="px-10px">
         <el-form-item>
           <XButton
             :loading="loginLoading"
             :title="t('login.register')"
-            class="w-[100%]"
+            class="w-full"
             type="primary"
             @click="getCode()"
           />
@@ -94,7 +94,7 @@
         @success="handleRegister"
       />
     </el-row>
-    <XButton :title="t('login.hasUser')" class="w-[100%]" @click="handleBackLogin()" />
+    <XButton :title="t('login.hasUser')" class="w-full" @click="handleBackLogin()" />
   </el-form>
 </template>
 <script lang="ts" setup>
@@ -105,7 +105,7 @@ import { useIcon } from '@/hooks/web/useIcon'
 import * as authUtil from '@/utils/auth'
 import { usePermissionStore } from '@/store/modules/permission'
 import * as LoginApi from '@/api/login'
-import { LoginStateEnum, useLoginState } from './useLogin'
+import { LoginStateEnum, useLoginState, useFormValid } from './useLogin'
 
 defineOptions({ name: 'RegisterForm' })
 
@@ -114,17 +114,18 @@ const iconHouse = useIcon({ icon: 'ep:house' })
 const iconAvatar = useIcon({ icon: 'ep:avatar' })
 const iconLock = useIcon({ icon: 'ep:lock' })
 const formLogin = ref()
+const {validForm} = useFormValid(formLogin)
 const { handleBackLogin, getLoginState } = useLoginState()
 const { currentRoute, push } = useRouter()
 const permissionStore = usePermissionStore()
 const redirect = ref<string>('')
 const loginLoading = ref(false)
 const verify = ref()
-const captchaType = ref('blockPuzzle') // blockPuzzle 滑块 clickWord 点击文字
+const captchaType = ref('blockPuzzle') // blockPuzzle 滑块 clickWord 点击文字 pictureWord 文字验证码
 
 const getShow = computed(() => unref(getLoginState) === LoginStateEnum.REGISTER)
 
-const equalToPassword = (rule, value, callback) => {
+const equalToPassword = (_rule, value, callback) => {
   if (registerData.registerForm.password !== value) {
     callback(new Error('两次输入的密码不一致'))
   } else {
@@ -171,6 +172,7 @@ const registerData = reactive({
   }
 })
 
+const loading = ref() // ElLoading.service 返回的实例
 // 提交注册
 const handleRegister = async (params: any) => {
   loading.value = true
@@ -182,6 +184,11 @@ const handleRegister = async (params: any) => {
 
     if (registerData.captchaEnable) {
       registerData.registerForm.captchaVerification = params.captchaVerification
+    }
+
+    const data = await validForm()
+    if (!data) {
+      return
     }
 
     const res = await LoginApi.register(registerData.registerForm)
@@ -234,14 +241,15 @@ const getTenantId = async () => {
 
 // 根据域名，获得租户信息
 const getTenantByWebsite = async () => {
-  const website = location.host
-  const res = await LoginApi.getTenantByWebsite(website)
-  if (res) {
-    registerData.registerForm.tenantName = res.name
-    authUtil.setTenantId(res.id)
+  if (registerData.tenantEnable === 'true') {
+    const website = location.host
+    const res = await LoginApi.getTenantByWebsite(website)
+    if (res) {
+      registerData.registerForm.tenantName = res.name
+      authUtil.setTenantId(res.id)
+    }
   }
 }
-const loading = ref() // ElLoading.service 返回的实例
 
 watch(
   () => currentRoute.value,

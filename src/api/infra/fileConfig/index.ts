@@ -12,6 +12,7 @@ export interface FileClientConfig {
   accessKey?: string
   accessSecret?: string
   enablePathStyleAccess?: boolean
+  enablePublicAccess?: boolean
   domain: string
 }
 
@@ -54,6 +55,11 @@ export const updateFileConfig = (data: FileConfigVO) => {
 // 删除文件配置
 export const deleteFileConfig = (id: number) => {
   return request.delete({ url: '/infra/file-config/delete?id=' + id })
+}
+
+// 批量删除文件配置
+export const deleteFileConfigList = (ids: number[]) => {
+  return request.delete({ url: '/infra/file-config/delete-list', params: { ids: ids.join(',') } })
 }
 
 // 测试文件配置

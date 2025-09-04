@@ -44,7 +44,9 @@ const locale = computed(() => appStore.getLocale)
 const message = computed(() => appStore.getMessage)
 
 // 租户切换权限
-const hasTenantVisitPermission = computed(() => checkPermi(['system:tenant:visit']))
+const hasTenantVisitPermission = computed(
+  () => import.meta.env.VITE_APP_TENANT_ENABLE === 'true' && checkPermi(['system:tenant:visit'])
+)
 
 export default defineComponent({
   name: 'ToolHeader',
@@ -71,7 +73,7 @@ export default defineComponent({
           {screenfull.value ? (
             <Screenfull class="custom-hover" color="var(--top-header-text-color)"></Screenfull>
           ) : undefined}
-          {search.value ? <RouterSearch isModal={false} /> : undefined}
+          {search.value ? <RouterSearch isModal={false} color="var(--top-header-text-color)"/> : undefined}
           {size.value ? (
             <SizeDropdown class="custom-hover" color="var(--top-header-text-color)"></SizeDropdown>
           ) : undefined}

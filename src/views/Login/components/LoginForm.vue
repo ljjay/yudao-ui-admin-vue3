@@ -82,7 +82,6 @@
           />
         </el-form-item>
       </el-col>
-
       <Verify
         v-if="loginData.captchaEnable === 'true'"
         ref="verify"
@@ -188,7 +187,7 @@ const permissionStore = usePermissionStore()
 const redirect = ref<string>('')
 const loginLoading = ref(false)
 const verify = ref()
-const captchaType = ref('blockPuzzle') // blockPuzzle 滑块 clickWord 点击文字
+const captchaType = ref('blockPuzzle') // blockPuzzle 滑块 clickWord 点击文字 pictureWord 文字验证码
 
 const getShow = computed(() => unref(getLoginState) === LoginStateEnum.LOGIN)
 
@@ -252,11 +251,13 @@ const getLoginFormCache = () => {
 }
 // 根据域名，获得租户信息
 const getTenantByWebsite = async () => {
-  const website = location.host
-  const res = await LoginApi.getTenantByWebsite(website)
-  if (res) {
-    loginData.loginForm.tenantName = res.name
-    authUtil.setTenantId(res.id)
+  if (loginData.tenantEnable === 'true') {
+    const website = location.host
+    const res = await LoginApi.getTenantByWebsite(website)
+    if (res) {
+      loginData.loginForm.tenantName = res.name
+      authUtil.setTenantId(res.id)
+    }
   }
 }
 const loading = ref() // ElLoading.service 返回的实例
