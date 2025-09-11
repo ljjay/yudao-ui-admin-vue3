@@ -34,6 +34,21 @@
           />
         </el-select>
       </el-form-item>
+      <el-form-item label="批次管理" prop="batchManage">
+        <el-select
+          v-model="queryParams.batchManage"
+          placeholder="请选择批次管理"
+          clearable
+          class="!w-240px"
+        >
+          <el-option
+            v-for="dict in getIntDictOptions(DICT_TYPE.COMMON_STATUS)"
+            :key="dict.value"
+            :label="dict.label"
+            :value="dict.value"
+          />
+        </el-select>
+      </el-form-item>
       <el-form-item>
         <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> 搜索</el-button>
         <el-button @click="resetQuery"><Icon icon="ep:refresh" class="mr-5px" /> 重置</el-button>
@@ -78,6 +93,11 @@
       <el-table-column label="状态" align="center" prop="status">
         <template #default="scope">
           <dict-tag :type="DICT_TYPE.COMMON_STATUS" :value="scope.row.status" />
+        </template>
+      </el-table-column>
+      <el-table-column label="批次管理" align="center" prop="batchManage">
+        <template #default="scope">
+          <dict-tag :type="DICT_TYPE.COMMON_STATUS" :value="scope.row.batchManage" />
         </template>
       </el-table-column>
       <el-table-column
@@ -139,7 +159,8 @@ const loading = ref(true) // 列表的加载中
 const list = ref<ProductCategoryVO[]>([]) // 列表的数据
 const queryParams = reactive({
   name: undefined,
-  status: undefined
+  status: undefined,
+  batchManage: undefined,
 })
 const queryFormRef = ref() // 搜索的表单
 const exportLoading = ref(false) // 导出的加载中

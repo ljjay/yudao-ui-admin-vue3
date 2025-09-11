@@ -37,6 +37,17 @@
           </el-radio>
         </el-radio-group>
       </el-form-item>
+      <el-form-item label="批次管理" prop="batchManage">
+        <el-radio-group v-model="formData.batchManage">
+          <el-radio
+            v-for="dict in getIntDictOptions(DICT_TYPE.COMMON_STATUS)"
+            :key="dict.value"
+            :value="dict.value"
+          >
+            {{ dict.label }}
+          </el-radio>
+        </el-radio-group>
+      </el-form-item>
       <ContentWrap>
         <el-tabs v-model="subTabsName" class="-mt-15px -mb-10px">
           <el-tab-pane label="类型指标明细" name="item">
@@ -80,14 +91,16 @@ const formData = ref({
   code: undefined,
   sort: undefined,
   items: [],
-  status: CommonStatusEnum.ENABLE
+  status: CommonStatusEnum.ENABLE,
+  batchManage: CommonStatusEnum.DISABLE,
 })
 const formRules = reactive({
   parentId: [{ required: true, message: '上级编号不能为空', trigger: 'blur' }],
   name: [{ required: true, message: '名称不能为空', trigger: 'blur' }],
   code: [{ required: true, message: '编码不能为空', trigger: 'blur' }],
   sort: [{ required: true, message: '排序不能为空', trigger: 'blur' }],
-  status: [{ required: true, message: '状态不能为空', trigger: 'blur' }]
+  status: [{ required: true, message: '状态不能为空', trigger: 'blur' }],
+  batchManage: [{ required: true, message: '批次管理不能为空', trigger: 'blur' }]
 })
 const formRef = ref() // 表单 Ref
 const productCategoryTree = ref() // 树形结构
@@ -147,6 +160,7 @@ const resetForm = () => {
     code: undefined,
     sort: undefined,
     status: CommonStatusEnum.ENABLE,
+    batchManage: CommonStatusEnum.DISABLE,
     items: []
   }
   formRef.value?.resetFields()

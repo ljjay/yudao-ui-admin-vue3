@@ -86,6 +86,11 @@
           <dict-tag :type="DICT_TYPE.COMMON_STATUS" :value="scope.row.status" />
         </template>
       </el-table-column>
+      <el-table-column label="批次管理" align="center" prop="batchManage">
+        <template #default="scope">
+          <dict-tag :type="DICT_TYPE.COMMON_STATUS" :value="scope.row.batchManage" />
+        </template>
+      </el-table-column>
       <el-table-column
         label="创建时间"
         align="center"
