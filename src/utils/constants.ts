@@ -438,6 +438,13 @@ export const ErpBizType = {
   SALE_RETURN: 22
 }
 
+//manageType
+export const ErpManageType = {
+  CATEGORY: 10,
+  BATCH:20,
+  UNIQUE:30
+}
+
 // ========== BPM 模块 ==========
 
 export const BpmModelType = {

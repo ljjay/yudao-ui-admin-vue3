@@ -37,8 +37,19 @@
           </el-radio>
         </el-radio-group>
       </el-form-item>
-      <el-form-item label="批次管理" prop="batchManage">
-        <el-radio-group v-model="formData.batchManage">
+      <el-form-item label="管理类型" prop="manageType">
+        <el-radio-group v-model="formData.manageType">
+          <el-radio
+            v-for="dict in getIntDictOptions(DICT_TYPE.ERP_PRODUCT_CATEGORY_MANAGEMENT_TYPE)"
+            :key="dict.value"
+            :value="dict.value"
+          >
+            {{ dict.label }}
+          </el-radio>
+        </el-radio-group>
+      </el-form-item>
+      <el-form-item label="强制管理类型" prop="coerceManageType">
+        <el-radio-group v-model="formData.coerceManageType">
           <el-radio
             v-for="dict in getIntDictOptions(DICT_TYPE.COMMON_STATUS)"
             :key="dict.value"
@@ -71,7 +82,7 @@
 import { getIntDictOptions, DICT_TYPE } from '@/utils/dict'
 import { ProductCategoryApi, ProductCategoryVO } from '@/api/erp/product/category'
 import { defaultProps, handleTree } from '@/utils/tree'
-import { CommonStatusEnum } from '@/utils/constants'
+import {CommonStatusEnum, ErpManageType} from '@/utils/constants'
 import CateItemForm from './components/cateItemForm.vue'
 
 /** ERP 产品分类 表单 */
@@ -92,7 +103,8 @@ const formData = ref({
   sort: undefined,
   items: [],
   status: CommonStatusEnum.ENABLE,
-  batchManage: CommonStatusEnum.DISABLE,
+  manageType: ErpManageType.CATEGORY,
+  coerceManageType:CommonStatusEnum.ENABLE,
 })
 const formRules = reactive({
   parentId: [{ required: true, message: '上级编号不能为空', trigger: 'blur' }],
@@ -100,7 +112,8 @@ const formRules = reactive({
   code: [{ required: true, message: '编码不能为空', trigger: 'blur' }],
   sort: [{ required: true, message: '排序不能为空', trigger: 'blur' }],
   status: [{ required: true, message: '状态不能为空', trigger: 'blur' }],
-  batchManage: [{ required: true, message: '批次管理不能为空', trigger: 'blur' }]
+  manageType: [{ required: true, message: '管理类型不能为空', trigger: 'blur' }],
+  coerceManageType:[{ required: true, message: '强制管理类型不能为空', trigger: 'blur' }],
 })
 const formRef = ref() // 表单 Ref
 const productCategoryTree = ref() // 树形结构
@@ -160,7 +173,8 @@ const resetForm = () => {
     code: undefined,
     sort: undefined,
     status: CommonStatusEnum.ENABLE,
-    batchManage: CommonStatusEnum.DISABLE,
+    manageType: ErpManageType.CATEGORY,
+    coerceManageType: CommonStatusEnum.ENABLE,
     items: []
   }
   formRef.value?.resetFields()

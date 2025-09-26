@@ -8,7 +8,7 @@
       :model="queryParams"
       ref="queryFormRef"
       :inline="true"
-      label-width="68px"
+      label-width="82px"
     >
       <el-form-item label="分类名称" prop="name">
         <el-input
@@ -34,10 +34,25 @@
           />
         </el-select>
       </el-form-item>
-      <el-form-item label="批次管理" prop="batchManage">
+      <el-form-item label="管理类型" prop="manageType">
         <el-select
-          v-model="queryParams.batchManage"
-          placeholder="请选择批次管理"
+          v-model="queryParams.manageType"
+          placeholder="请选择管理类型"
+          clearable
+          class="!w-240px"
+        >
+          <el-option
+            v-for="dict in getIntDictOptions(DICT_TYPE.ERP_PRODUCT_CATEGORY_MANAGEMENT_TYPE)"
+            :key="dict.value"
+            :label="dict.label"
+            :value="dict.value"
+          />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="强制管理类型" prop="coerceManageType">
+        <el-select
+          v-model="queryParams.coerceManageType"
+          placeholder="请选择强制管理类型"
           clearable
           class="!w-240px"
         >
@@ -95,9 +110,14 @@
           <dict-tag :type="DICT_TYPE.COMMON_STATUS" :value="scope.row.status" />
         </template>
       </el-table-column>
-      <el-table-column label="批次管理" align="center" prop="batchManage">
+      <el-table-column label="管理类型" align="center" prop="manageType">
         <template #default="scope">
-          <dict-tag :type="DICT_TYPE.COMMON_STATUS" :value="scope.row.batchManage" />
+          <dict-tag :type="DICT_TYPE.ERP_PRODUCT_CATEGORY_MANAGEMENT_TYPE" :value="scope.row.manageType" />
+        </template>
+      </el-table-column>
+      <el-table-column label="强制管理类型" align="center" prop="coerceManageType">
+        <template #default="scope">
+          <dict-tag :type="DICT_TYPE.COMMON_STATUS" :value="scope.row.coerceManageType" />
         </template>
       </el-table-column>
       <el-table-column
@@ -160,7 +180,8 @@ const list = ref<ProductCategoryVO[]>([]) // 列表的数据
 const queryParams = reactive({
   name: undefined,
   status: undefined,
-  batchManage: undefined,
+  manageType: undefined,
+  coerceManageType: undefined,
 })
 const queryFormRef = ref() // 搜索的表单
 const exportLoading = ref(false) // 导出的加载中

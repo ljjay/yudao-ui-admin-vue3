@@ -8,6 +8,8 @@ export interface ProductCategoryVO {
   code: string // 分类编码
   sort: number // 分类排序
   status: number // 开启状态
+  manageType:number //管理类型
+  coerceManageType: number // 强制管理类型
 }
 
 // ERP 产品分类 API
