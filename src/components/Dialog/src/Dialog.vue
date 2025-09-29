@@ -10,7 +10,7 @@ const emits = defineEmits(['update:modelValue'])
 const props = defineProps({
   modelValue: propTypes.bool.def(false),
   title: propTypes.string.def('Dialog'),
-  fullscreen: propTypes.bool.def(true),
+  fullscreen: propTypes.bool.def(false),
   width: propTypes.oneOfType([String, Number]).def('40%'),
   scroll: propTypes.bool.def(false), // 是否开启滚动条。如果是的话，按照 maxHeight 设置最大高度
   maxHeight: propTypes.oneOfType([String, Number]).def('400px')
@@ -28,13 +28,23 @@ const getBindValue = computed(() => {
   return obj
 })
 
-const isFullscreen = ref(false)
+const isFullscreen = ref(props.fullscreen)
 
 const toggleFull = () => {
   isFullscreen.value = !unref(isFullscreen)
 }
 
 const dialogHeight = ref(isNumber(props.maxHeight) ? `${props.maxHeight}px` : props.maxHeight)
+
+watch(
+  () => props.fullscreen,
+  (val: boolean) => {
+    isFullscreen.value = val
+  },
+  {
+    immediate: true
+  }
+)
 
 watch(
   () => isFullscreen.value,

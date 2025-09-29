@@ -115,7 +115,7 @@
           <dict-tag :type="DICT_TYPE.ERP_PRODUCT_CATEGORY_MANAGEMENT_TYPE" :value="scope.row.manageType" />
         </template>
       </el-table-column>
-      <el-table-column label="强制管理类型" align="center" prop="coerceManageType">
+      <el-table-column label="强制管理" align="center" prop="coerceManageType">
         <template #default="scope">
           <dict-tag :type="DICT_TYPE.COMMON_STATUS" :value="scope.row.coerceManageType" />
         </template>

@@ -48,7 +48,7 @@
           </el-radio>
         </el-radio-group>
       </el-form-item>
-      <el-form-item label="强制管理类型" prop="coerceManageType">
+      <el-form-item label="强制管理" prop="coerceManageType">
         <el-radio-group v-model="formData.coerceManageType">
           <el-radio
             v-for="dict in getIntDictOptions(DICT_TYPE.COMMON_STATUS)"
