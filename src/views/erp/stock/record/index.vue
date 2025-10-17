@@ -123,6 +123,7 @@
       <el-table-column label="产品分类" align="center" prop="categoryName" />
       <el-table-column label="产品单位" align="center" prop="unitName" />
       <el-table-column label="仓库编号" align="center" prop="warehouseName" />
+      <el-table-column label="批次" align="center" prop="batchName" width="120" />
       <el-table-column label="类型" align="center" prop="bizType" min-width="100">
         <template #default="scope">
           <dict-tag :type="DICT_TYPE.ERP_STOCK_RECORD_BIZ_TYPE" :value="scope.row.bizType" />

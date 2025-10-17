@@ -1,5 +1,5 @@
 <template>
-  <Dialog :title="dialogTitle" v-model="dialogVisible" width="1440">
+  <Dialog :title="dialogTitle" v-model="dialogVisible" width="100%" fullscreen>
     <el-form
       ref="formRef"
       :model="formData"
@@ -94,6 +94,7 @@
               ref="itemFormRef"
               :items="formData.items"
               :disabled="disabled"
+              :deptId="formData.deptId"
             />
           </el-tab-pane>
         </el-tabs>
@@ -339,6 +340,9 @@ const handlePurchaseOrderChange = (order: PurchaseOrderVO) => {
     item.count = item.inCount - item.returnCount
     item.orderItemId = item.id
     item.id = undefined
+    // 设置部门ID和管理类型（用于批次选择判断）
+    item.deptId = formData.value.deptId
+    item.manageType = item.manageType // 订单项中应该已经包含了管理类型
   })
   formData.value.items = order.items.filter((item) => item.count > 0)
 }

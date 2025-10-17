@@ -60,4 +60,7 @@ export const PurchaseReturnApi = {
   exportPurchaseReturn: async (params: any) => {
     return await request.download({ url: `/erp/purchase-return/export-excel`, params })
   }
+
+  // 注意：获取产品库存信息请使用 StockApi.getProductStockForOperation()
+  // 统一的库存服务接口位于 @/api/erp/stock/stock
 }

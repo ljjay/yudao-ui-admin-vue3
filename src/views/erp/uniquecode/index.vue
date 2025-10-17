@@ -1,7 +1,5 @@
-<!-- ERP 产品库存列表 -->
+<!-- ERP 一物一码查询 -->
 <template>
-  <doc-alert title="【库存】产品库存、库存明细" url="https://doc.iocoder.cn/erp/stock/" />
-
   <ContentWrap>
     <!-- 搜索工作栏 -->
     <el-form
@@ -11,17 +9,24 @@
       :inline="true"
       label-width="68px"
     >
-      <!-- 部门选择下拉框 tree 控件     -->
-      <el-form-item label="单位" prop="deptId">
+      <el-form-item label="单位" prop="currentDeptId">
         <el-tree-select
-          v-model="queryParams.deptIds"
+          v-model="queryParams.currentDeptId"
           :data="deptIdTreeData"
           :props="defaultProps"
-          multiple
           :render-after-expand="false"
           check-on-click-node
           check-strictly
           style="width: 240px"
+        />
+      </el-form-item>
+      <el-form-item label="唯一码" prop="code">
+        <el-input
+          v-model="queryParams.code"
+          placeholder="请输入唯一码"
+          clearable
+          @keyup.enter="handleQuery"
+          class="!w-240px"
         />
       </el-form-item>
       <el-form-item label="产品" prop="productId">
@@ -40,9 +45,9 @@
           />
         </el-select>
       </el-form-item>
-      <el-form-item label="仓库" prop="warehouseId">
+      <el-form-item label="仓库" prop="currentWarehouseId">
         <el-select
-          v-model="queryParams.warehouseId"
+          v-model="queryParams.currentWarehouseId"
           clearable
           filterable
           placeholder="请选择仓库"
@@ -56,26 +61,24 @@
           />
         </el-select>
       </el-form-item>
+      <el-form-item label="状态" prop="status">
+        <el-select
+          v-model="queryParams.status"
+          placeholder="请选择状态"
+          clearable
+          class="!w-240px"
+        >
+          <el-option
+            v-for="dict in getIntDictOptions(DICT_TYPE.ERP_UNIQUE_CODE_STATUS)"
+            :key="dict.value"
+            :label="dict.label"
+            :value="dict.value"
+          />
+        </el-select>
+      </el-form-item>
       <el-form-item>
         <el-button @click="handleQuery"><Icon icon="ep:search" class="mr-5px" /> 搜索</el-button>
         <el-button @click="resetQuery"><Icon icon="ep:refresh" class="mr-5px" /> 重置</el-button>
-        <el-button
-          type="primary"
-          plain
-          @click="openForm('create')"
-          v-hasPermi="['erp:stock:create']"
-        >
-          <Icon icon="ep:plus" class="mr-5px" /> 新增
-        </el-button>
-        <el-button
-          type="success"
-          plain
-          @click="handleExport"
-          :loading="exportLoading"
-          v-hasPermi="['erp:stock:export']"
-        >
-          <Icon icon="ep:download" class="mr-5px" /> 导出
-        </el-button>
       </el-form-item>
     </el-form>
   </ContentWrap>
@@ -84,17 +87,23 @@
   <ContentWrap>
     <el-table v-loading="loading" :data="list" :stripe="true" :show-overflow-tooltip="true">
       <el-table-column label="单位" align="center" prop="deptName" />
+      <el-table-column label="唯一码" align="center" prop="code" min-width="150" />
       <el-table-column label="产品名称" align="center" prop="productName" />
-      <el-table-column label="产品单位" align="center" prop="unitName" />
-      <el-table-column label="产品分类" align="center" prop="categoryName" />
-      <el-table-column
-        label="库存量"
-        align="center"
-        prop="count"
-        :formatter="erpCountTableColumnFormatter"
-      />
-      <el-table-column label="仓库" align="center" prop="warehouseName" />
       <el-table-column label="批次" align="center" prop="batchName" />
+      <el-table-column label="状态" align="center" prop="status">
+        <template #default="scope">
+          <dict-tag :type="DICT_TYPE.ERP_UNIQUE_CODE_STATUS" :value="scope.row.status" />
+        </template>
+      </el-table-column>
+      <el-table-column label="当前仓库" align="center" prop="warehouseName" />
+      <el-table-column label="保修天数" align="center" prop="warrantyPeriodDays" />
+      <el-table-column label="入库日期" align="center" prop="purchaseInDate" width="110" />
+      <el-table-column
+        label="采购单价"
+        align="center"
+        prop="purchasePrice"
+        :formatter="erpPriceTableColumnFormatter"
+      />
     </el-table>
     <!-- 分页 -->
     <Pagination
@@ -107,32 +116,33 @@
 </template>
 
 <script setup lang="ts">
-import download from '@/utils/download'
-import { StockApi, StockVO } from '@/api/erp/stock/stock'
+import { UniqueCodeApi, UniqueCodeVO } from '@/api/erp/uniquecode'
 import { ProductApi, ProductVO } from '@/api/erp/product/product'
 import { WarehouseApi, WarehouseVO } from '@/api/erp/stock/warehouse'
-import { erpCountTableColumnFormatter } from '@/utils'
-import {defaultProps, handleTree} from "@/utils/tree";
-import * as DeptApi from "@/api/system/dept";
+import { erpPriceTableColumnFormatter } from '@/utils'
+import { defaultProps, handleTree } from '@/utils/tree'
+import * as DeptApi from '@/api/system/dept'
+import { getIntDictOptions, DICT_TYPE } from '@/utils/dict'
 
-/** ERP 产品库存列表 */
-defineOptions({ name: 'ErpStock' })
+/** ERP 一物一码查询 */
+defineOptions({ name: 'ErpUniqueCode' })
 
 const message = useMessage() // 消息弹窗
 const { t } = useI18n() // 国际化
 
 const loading = ref(true) // 列表的加载中
-const list = ref<StockVO[]>([]) // 列表的数据
+const list = ref<UniqueCodeVO[]>([]) // 列表的数据
 const total = ref(0) // 列表的总页数
 const queryParams = reactive({
   pageNo: 1,
   pageSize: 10,
+  code: undefined,
   productId: undefined,
-  warehouseId: undefined,
-  deptIds: []
+  currentWarehouseId: undefined,
+  currentDeptId: undefined,
+  status: undefined
 })
 const queryFormRef = ref() // 搜索的表单
-const exportLoading = ref(false) // 导出的加载中
 const productList = ref<ProductVO[]>([]) // 产品列表
 const warehouseList = ref<WarehouseVO[]>([]) // 仓库列表
 const deptIdTreeData = ref<any[]>([]) // 部门树形结构
@@ -141,7 +151,7 @@ const deptIdTreeData = ref<any[]>([]) // 部门树形结构
 const getList = async () => {
   loading.value = true
   try {
-    const data = await StockApi.getStockPage(queryParams)
+    const data = await UniqueCodeApi.getUniqueCodePage(queryParams)
     list.value = data.list
     total.value = data.total
   } finally {
@@ -158,42 +168,8 @@ const handleQuery = () => {
 /** 重置按钮操作 */
 const resetQuery = () => {
   queryFormRef.value.resetFields()
-  queryParams.deptIds = [];
+  queryParams.currentDeptId = undefined
   handleQuery()
-}
-
-/** 添加/修改操作 */
-const formRef = ref()
-const openForm = (type: string, id?: number) => {
-  formRef.value.open(type, id)
-}
-
-/** 删除按钮操作 */
-const handleDelete = async (id: number) => {
-  try {
-    // 删除的二次确认
-    await message.delConfirm()
-    // 发起删除
-    await StockApi.deleteStock(id)
-    message.success(t('common.delSuccess'))
-    // 刷新列表
-    await getList()
-  } catch {}
-}
-
-/** 导出按钮操作 */
-const handleExport = async () => {
-  try {
-    // 导出的二次确认
-    await message.exportConfirm()
-    // 发起导出
-    exportLoading.value = true
-    const data = await StockApi.exportStock(queryParams)
-    download.excel(data, '产品库存.xls')
-  } catch {
-  } finally {
-    exportLoading.value = false
-  }
 }
 
 /** 获取有权限的部门 */
@@ -211,3 +187,4 @@ onMounted(async () => {
   warehouseList.value = await WarehouseApi.getWarehouseSimpleList()
 })
 </script>
+

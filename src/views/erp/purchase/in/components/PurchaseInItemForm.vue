@@ -152,11 +152,63 @@
           </el-form-item>
         </template>
       </el-table-column>
+      <el-table-column label="保修天数" min-width="100">
+        <template #default="{ row, $index }">
+          <!-- 根据管理类型决定是否显示保修天数字段 -->
+          <el-form-item 
+            v-if="row.manageType === 20 || row.manageType === 30" 
+            :prop="`${$index}.warrantyPeriodDays`" 
+            :rules="[{ required: true, message: '保修天数不能为空', trigger: 'blur' }]"
+            class="mb-0px!"
+          >
+            <el-input-number
+              v-model="row.warrantyPeriodDays"
+              controls-position="right"
+              :min="1"
+              :precision="0"
+              placeholder="请输入保修天数"
+              class="!w-100%"
+            />
+          </el-form-item>
+          <el-form-item v-else class="mb-0px!">
+            <el-input v-model="row.warrantyPeriodDays" disabled />
+          </el-form-item>
+        </template>
+      </el-table-column>
       <el-table-column label="备注" min-width="150">
         <template #default="{ row, $index }">
           <el-form-item :prop="`${$index}.remark`" class="mb-0px!">
             <el-input v-model="row.remark" placeholder="请输入备注" />
           </el-form-item>
+        </template>
+      </el-table-column>
+      <el-table-column label="一物一码" min-width="120" fixed="right">
+        <template #default="{ row, $index }">
+          <!-- 只有一物一码管理才显示输入按钮 -->
+          <el-form-item
+            v-if="row.manageType === 30"
+            :prop="`${$index}.uniqueCodes`"
+            :rules="[{
+              validator: (rule, value, callback) => {
+                // 允许不输入（自动生成模式）
+                if (!value || value.length === 0) {
+                  callback()
+                } else if (value.length !== Math.floor(row.count)) {
+                  // 如果输入了，则必须匹配数量
+                  callback(new Error(`需要输入${Math.floor(row.count)}个唯一码`))
+                } else {
+                  callback()
+                }
+              },
+              trigger: 'change'
+            }]"
+            class="mb-0px!"
+          >
+            <el-button @click="openUniqueCodeInputDialog(row)" type="primary" link>
+              {{ row.uniqueCodes && row.uniqueCodes.length > 0 ? `已输入${row.uniqueCodes.length}个` : '自动生成' }}
+            </el-button>
+          </el-form-item>
+          <div v-else class="text-gray-400 text-center">—</div>
         </template>
       </el-table-column>
       <el-table-column align="center" fixed="right" label="操作" width="60">
@@ -168,6 +220,49 @@
       </el-table-column>
     </el-table>
   </el-form>
+
+  <!-- 一物一码输入对话框 -->
+  <el-dialog
+    v-model="uniqueCodeDialogVisible"
+    title="一物一码设置"
+    width="600px"
+    :close-on-click-modal="false"
+  >
+    <el-alert
+      title="提示"
+      type="info"
+      :closable="false"
+      style="margin-bottom: 15px"
+    >
+      可以选择手动输入唯一码，或留空自动生成（审批时生成）
+    </el-alert>
+    <el-form :model="uniqueCodeForm" label-width="120px">
+      <el-form-item label="产品名称">
+        <el-input :value="currentRow?.productName" disabled />
+      </el-form-item>
+      <el-form-item label="需要数量">
+        <el-input :value="currentRow ? Math.floor(currentRow.count) : 0" disabled />
+      </el-form-item>
+      <el-form-item label="唯一码列表">
+        <el-input
+          v-model="uniqueCodeForm.codesText"
+          type="textarea"
+          :rows="10"
+          placeholder="每行输入一个唯一码（条形码/二维码/RFID等），留空则审批时自动生成"
+        />
+        <div class="text-gray-400 text-sm mt-2">
+          已输入：{{ uniqueCodeForm.codesText.split('\n').filter(c => c.trim()).length }} 个
+          <span v-if="uniqueCodeForm.codesText.split('\n').filter(c => c.trim()).length === 0" class="text-blue-500">
+            （将自动生成）
+          </span>
+        </div>
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="uniqueCodeDialogVisible = false">取消</el-button>
+      <el-button type="primary" @click="confirmUniqueCodeInput">确定</el-button>
+    </template>
+  </el-dialog>
 </template>
 <script setup lang="ts">
 import { StockApi } from '@/api/erp/stock/stock'
@@ -180,9 +275,10 @@ import {
 import { WarehouseApi, WarehouseVO } from '@/api/erp/stock/warehouse'
 
 const props = defineProps<{
-  items: undefined
-  disabled: false
+  items: any[]
+  disabled: boolean
 }>()
+const message = useMessage() // 消息弹窗
 const formLoading = ref(false) // 表单的加载中
 const formData = ref([])
 const formRules = reactive({
@@ -193,6 +289,13 @@ const formRules = reactive({
 const formRef = ref([]) // 表单 Ref
 const warehouseList = ref<WarehouseVO[]>([]) // 仓库列表
 const defaultWarehouse = ref<WarehouseVO>(undefined) // 默认仓库
+
+// 一物一码输入对话框相关
+const uniqueCodeDialogVisible = ref(false) // 一物一码输入对话框是否显示
+const currentRow = ref<any>(null) // 当前操作的行
+const uniqueCodeForm = reactive({
+  codesText: '' // 唯一码文本（每行一个）
+})
 
 // 新增：重置仓库列表的方法
 const resetWarehouseList = async (isReset: boolean ,newDeptId: number) => {
@@ -217,6 +320,17 @@ watch(
       }
       if (item.stockCount === null && item.warehouseId != null) {
         setStockCount(item)
+      }
+      // 确保新字段存在，如果后端没有返回则设置默认值
+      if (item.warrantyPeriodDays === undefined) {
+        item.warrantyPeriodDays = undefined
+      }
+      if (item.manageType === undefined) {
+        item.manageType = undefined
+      }
+      // 初始化一物一码字段
+      if (item.uniqueCodes === undefined) {
+        item.uniqueCodes = []
       }
     })
     formData.value = val
@@ -280,7 +394,9 @@ const handleAdd = () => {
     taxPercent: undefined,
     taxPrice: undefined,
     totalPrice: undefined,
-    remark: undefined
+    remark: undefined,
+    warrantyPeriodDays: undefined,
+    manageType: undefined // 管理类型，用于决定是否显示保修天数字段
   }
   formData.value.push(row)
 }
@@ -306,6 +422,66 @@ const setStockCount = async (row: any) => {
   const count = await StockApi.getStock2(row.productId,row.warehouseId)
   row.stockCount = count ? count.count : 0
 
+}
+
+/** 打开一物一码输入对话框 */
+const openUniqueCodeInputDialog = (row: any) => {
+  currentRow.value = row
+  // 如果之前已经输入过唯一码，加载到对话框中
+  if (row.uniqueCodes && row.uniqueCodes.length > 0) {
+    uniqueCodeForm.codesText = row.uniqueCodes.join('\n')
+  } else {
+    uniqueCodeForm.codesText = ''
+  }
+  uniqueCodeDialogVisible.value = true
+}
+
+/** 确认输入一物一码 */
+const confirmUniqueCodeInput = () => {
+  if (!currentRow.value) {
+    return
+  }
+
+  // 解析输入的唯一码（每行一个，去除空行和前后空格）
+  const codes = uniqueCodeForm.codesText
+    .split('\n')
+    .map(code => code.trim())
+    .filter(code => code.length > 0)
+
+  const requiredCount = Math.floor(currentRow.value.count)
+
+  // 如果没有输入任何唯一码，则使用自动生成模式
+  if (codes.length === 0) {
+    currentRow.value.uniqueCodes = []
+    uniqueCodeDialogVisible.value = false
+    currentRow.value = null
+    uniqueCodeForm.codesText = ''
+    message.success('已设置为自动生成模式')
+    return
+  }
+
+  // 如果输入了唯一码，则校验数量必须匹配
+  if (codes.length !== requiredCount) {
+    message.warning(`需要输入${requiredCount}个唯一码，当前输入了${codes.length}个`)
+    return
+  }
+
+  // 校验唯一码是否有重复
+  const uniqueCodes = new Set(codes)
+  if (uniqueCodes.size !== codes.length) {
+    message.warning('唯一码中存在重复，请检查')
+    return
+  }
+
+  // 保存到当前行
+  currentRow.value.uniqueCodes = codes
+
+  // 关闭对话框
+  uniqueCodeDialogVisible.value = false
+  currentRow.value = null
+  uniqueCodeForm.codesText = ''
+
+  message.success('唯一码设置成功')
 }
 
 /** 表单校验 */

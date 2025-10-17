@@ -12,6 +12,10 @@ export interface StockVO {
   count: number
   // 部门编码
   deptId: number
+  // 采购入库项编号（批次ID）
+  purchaseInItemId?: number
+  // 批次名称
+  batchName?: string
 }
 
 // ERP 产品库存 API
@@ -44,5 +48,13 @@ export const StockApi = {
   // 导出产品库存 Excel
   exportStock: async (params) => {
     return await request.download({ url: `/erp/stock/export-excel`, params })
+  },
+
+  // 获取产品的可用库存信息（用于出入库操作）
+  getProductStockForOperation: async (productId: number, deptId: number) => {
+    return await request.get({
+      url: `/erp/stock/get-product-stock-for-operation`,
+      params: { productId, deptId }
+    })
   }
 }
