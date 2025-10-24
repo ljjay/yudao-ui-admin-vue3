@@ -59,5 +59,53 @@ export const SaleReturnApi = {
   // 导出销售退货 Excel
   exportSaleReturn: async (params: any) => {
     return await request.download({ url: `/erp/sale-return/export-excel`, params })
+  },
+
+  // 根据销售订单获取可退货批次列表
+  getBatchListByOrder: async (params: {
+    orderId: number
+    productId: number
+    warehouseId: number
+  }) => {
+    return await request.get({ 
+      url: `/erp/sale-return/batch-list-by-order`, 
+      params 
+    })
+  },
+
+  // 根据销售订单获取批次可退货数量
+  getReturnableCountByOrder: async (params: {
+    orderId: number
+    productId: number
+    purchaseInItemIds: number[]
+  }) => {
+    return await request.get({ 
+      url: `/erp/sale-return/returnable-count-by-order`, 
+      params: {
+        ...params,
+        purchaseInItemIds: params.purchaseInItemIds.join(',')
+      }
+    })
+  },
+
+  // 根据销售订单获取可退货一物一码详细信息
+  getUniqueCodeInfoByOrder: async (params: {
+    orderId: number
+    productId: number
+    warehouseId: number
+    purchaseInItemId: number
+  }) => {
+    return await request.get({ 
+      url: `/erp/sale-return/unique-code-info-by-order`, 
+      params 
+    })
+  },
+
+  // 根据批次ID获取批次名称映射
+  getBatchNameMap: async (params: { purchaseInItemIds: number[] }) => {
+    return await request.get({
+      url: `/erp/sale-return/batch-name-map`,
+      params: { purchaseInItemIds: params.purchaseInItemIds.join(',') }
+    })
   }
 }

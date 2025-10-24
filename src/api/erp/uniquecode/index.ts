@@ -73,6 +73,15 @@ export const UniqueCodeApi = {
   },
 
   /**
+   * 根据唯一码列表查询一物一码详细信息（用于详情页查看）
+   */
+  getUniqueCodeListByCodes: async (codes: string[]) => {
+    // 将数组转换为逗号分隔的字符串，避免 GET 请求参数序列化问题
+    const codesStr = codes.join(',')
+    return await request.get({ url: `/erp/unique-code/by-codes`, params: { codes: codesStr } })
+  },
+
+  /**
    * 查询一物一码分页
    */
   getUniqueCodePage: async (params: any) => {

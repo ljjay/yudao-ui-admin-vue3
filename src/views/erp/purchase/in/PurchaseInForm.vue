@@ -332,7 +332,9 @@ const handlePurchaseOrderChange = (order: PurchaseOrderVO) => {
   // 将订单项设置到入库单项
   order.items.forEach((item) => {
     item.totalCount = item.count
-    item.count = item.totalCount - item.inCount
+    // 计算剩余可入库数量 = 订单数量 - (已入库 - 已退货) = 订单数量 - 净入库数量
+    const netInCount = (item.inCount || 0) - (item.returnCount || 0)
+    item.count = item.totalCount - netInCount
     item.orderItemId = item.id
     item.id = undefined
   })

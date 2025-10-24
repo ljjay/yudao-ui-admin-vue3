@@ -1,5 +1,5 @@
 <template>
-  <Dialog :title="dialogTitle" v-model="dialogVisible" width="1440">
+  <Dialog :title="dialogTitle" v-model="dialogVisible" width="100%" fullscreen>
     <el-form
       ref="formRef"
       :model="formData"
@@ -108,7 +108,13 @@
       <ContentWrap>
         <el-tabs v-model="subTabsName" class="-mt-15px -mb-10px">
           <el-tab-pane label="退货产品清单" name="item">
-            <SaleReturnItemForm ref="itemFormRef" :items="formData.items" :disabled="disabled" />
+            <SaleReturnItemForm 
+              ref="itemFormRef" 
+              :items="formData.items" 
+              :disabled="disabled" 
+              :deptId="formData.deptId"
+              :orderId="formData.orderId"
+            />
           </el-tab-pane>
         </el-tabs>
       </ContentWrap>
@@ -279,6 +285,13 @@ const open = async (row , type: string, id?: number) => {
     formLoading.value = true
     try {
       formData.value = await SaleReturnApi.getSaleReturn(id)
+      // 详情/编辑载入后，为子项补齐上下文（避免子表初始化缺字段导致误清理）
+      if (Array.isArray(formData.value.items)) {
+        formData.value.items.forEach((item: any) => {
+          if (!item.deptId && formData.value.deptId) item.deptId = formData.value.deptId
+          if (!item.orderId && formData.value.orderId) item.orderId = formData.value.orderId
+        })
+      }
     } finally {
       formLoading.value = false
     }
@@ -351,6 +364,9 @@ const handleSaleOrderChange = (order: SaleOrderVO) => {
     item.count = item.outCount - item.returnCount
     item.orderItemId = item.id
     item.id = undefined
+    // ✅ 关键修复：设置deptId和orderId（用于ItemForm加载可退货批次）
+    item.deptId = formData.value.deptId
+    item.orderId = formData.value.orderId
   })
   formData.value.items = order.items.filter((item) => item.count > 0)
 }
@@ -360,7 +376,17 @@ const emit = defineEmits(['success']) // 定义 success 事件，用于操作成
 const submitForm = async () => {
   // 校验表单
   await formRef.value.validate()
+  
+  // ✅ 关键修复：先同步数据，再校验子表单
+  // 从子组件获取最新的items数据，确保删除、修改等操作已同步
+  formData.value.items = itemFormRef.value.getTableData()
+  
+  // 等待Vue更新，确保ItemForm的watch已执行
+  await nextTick()
+  
+  // 再校验子表单（此时ItemForm的formData已同步）
   await itemFormRef.value.validate()
+  
   // 提交请求
   formLoading.value = true
   try {

@@ -1,5 +1,5 @@
 <template>
-  <Dialog :title="dialogTitle" v-model="dialogVisible" width="1440">
+  <Dialog :title="dialogTitle" v-model="dialogVisible" width="100%" fullscreen>
     <el-form
       ref="formRef"
       :model="formData"
@@ -108,7 +108,12 @@
       <ContentWrap>
         <el-tabs v-model="subTabsName" class="-mt-15px -mb-10px">
           <el-tab-pane label="出库产品清单" name="item">
-            <SaleOutItemForm ref="itemFormRef" :items="formData.items" :disabled="disabled" />
+            <SaleOutItemForm 
+              ref="itemFormRef" 
+              :items="formData.items" 
+              :disabled="disabled" 
+              :deptId="formData.deptId"
+            />
           </el-tab-pane>
         </el-tabs>
       </ContentWrap>
@@ -220,7 +225,7 @@ const formData = ref({
   saleUserId: undefined,
   outTime: undefined,
   remark: undefined,
-  fileUrl: '',
+  fileUrl: undefined,
   discountPercent: 0,
   discountPrice: 0,
   totalPrice: 0,
@@ -280,6 +285,12 @@ const open = async (row , type: string, id?: number) => {
     formLoading.value = true
     try {
       formData.value = await SaleOutApi.getSaleOut(id)
+      // 详情/编辑载入后，为子项补齐上下文（避免子表初始化缺字段导致误清理）
+      if (Array.isArray(formData.value.items)) {
+        formData.value.items.forEach((item: any) => {
+          if (!item.deptId && formData.value.deptId) item.deptId = formData.value.deptId
+        })
+      }
     } finally {
       formLoading.value = false
     }
@@ -349,9 +360,13 @@ const handleSaleOrderChange = (order: SaleOrderVO) => {
   // 将订单项设置到出库单项
   order.items.forEach((item) => {
     item.totalCount = item.count
-    item.count = item.totalCount - item.outCount
+    // 计算剩余可出库数量 = 订单数量 - (已出库 - 已退货) = 订单数量 - 净出库数量
+    const netOutCount = (item.outCount || 0) - (item.returnCount || 0)
+    item.count = item.totalCount - netOutCount
     item.orderItemId = item.id
     item.id = undefined
+    // ✅ 关键修复：设置deptId（用于ItemForm加载库存和批次）
+    item.deptId = formData.value.deptId
   })
   formData.value.items = order.items.filter((item) => item.count > 0)
 }
@@ -361,7 +376,17 @@ const emit = defineEmits(['success']) // 定义 success 事件，用于操作成
 const submitForm = async () => {
   // 校验表单
   await formRef.value.validate()
+  
+  // ✅ 关键修复：先同步数据，再校验子表单
+  // 从子组件获取最新的items数据，确保删除、修改等操作已同步
+  formData.value.items = itemFormRef.value.getTableData()
+  
+  // 等待Vue更新，确保ItemForm的watch已执行
+  await nextTick()
+  
+  // 再校验子表单（此时ItemForm的formData已同步）
   await itemFormRef.value.validate()
+  
   // 提交请求
   formLoading.value = true
   try {

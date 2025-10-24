@@ -75,14 +75,15 @@
         </template>
       </el-table-column>
       <el-table-column
-        label="已入库"
+        label="已入库（净）"
         fixed="right"
-        min-width="80"
+        min-width="100"
         v-if="formData[0]?.inCount != null"
       >
         <template #default="{ row }">
           <el-form-item class="mb-0px!">
-            <el-input disabled v-model="row.inCount" :formatter="erpCountInputFormatter" />
+            <!-- 显示净入库数量 = 已入库 - 已退货 -->
+            <el-input disabled :model-value="((row.inCount || 0) - (row.returnCount || 0))" :formatter="erpCountInputFormatter" />
           </el-form-item>
         </template>
       </el-table-column>

@@ -269,6 +269,12 @@ const open = async (row , type: string, id?: number) => {
     formLoading.value = true
     try {
       formData.value = await PurchaseReturnApi.getPurchaseReturn(id)
+      // 详情/编辑载入后，为子项补齐上下文（避免子表初始化缺字段导致误清理）
+      if (Array.isArray(formData.value.items)) {
+        formData.value.items.forEach((item: any) => {
+          if (!item.deptId && formData.value.deptId) item.deptId = formData.value.deptId
+        })
+      }
     } finally {
       formLoading.value = false
     }
@@ -340,9 +346,9 @@ const handlePurchaseOrderChange = (order: PurchaseOrderVO) => {
     item.count = item.inCount - item.returnCount
     item.orderItemId = item.id
     item.id = undefined
-    // 设置部门ID和管理类型（用于批次选择判断）
+    // ✅ 关键修复：设置deptId（用于ItemForm加载库存和批次）
     item.deptId = formData.value.deptId
-    item.manageType = item.manageType // 订单项中应该已经包含了管理类型
+    // 订单项中应该已经包含了管理类型（无需额外设置）
   })
   formData.value.items = order.items.filter((item) => item.count > 0)
 }
@@ -352,7 +358,17 @@ const emit = defineEmits(['success']) // 定义 success 事件，用于操作成
 const submitForm = async () => {
   // 校验表单
   await formRef.value.validate()
+  
+  // ✅ 关键修复：先同步数据，再校验子表单
+  // 从子组件获取最新的items数据，确保删除、修改等操作已同步
+  formData.value.items = itemFormRef.value.getTableData()
+  
+  // 等待Vue更新，确保ItemForm的watch已执行
+  await nextTick()
+  
+  // 再校验子表单（此时ItemForm的formData已同步）
   await itemFormRef.value.validate()
+  
   // 提交请求
   formLoading.value = true
   try {
