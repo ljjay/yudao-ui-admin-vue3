@@ -1,5 +1,5 @@
 <template>
-  <Dialog :title="dialogTitle" v-model="dialogVisible" width="1080">
+  <Dialog :title="dialogTitle" v-model="dialogVisible" width="100%" fullscreen>
     <el-form
       ref="formRef"
       :model="formData"
@@ -44,6 +44,19 @@
           </el-form-item>
         </el-col>
         <el-col :span="8">
+          <el-form-item label="业务类型" prop="bizType">
+            <el-select
+              v-model="formData.bizType"
+              placeholder="请选择业务类型"
+              class="!w-1/1"
+            >
+              <el-option label="其他入库" :value="10" />
+              <el-option label="报修拆车入库" :value="90" />
+              <el-option label="送修入库" :value="102" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="8">
           <el-form-item label="单位" prop="deptId">
             <el-tree-select
               v-model="formData.deptId"
@@ -78,7 +91,7 @@
     <ContentWrap>
       <el-tabs v-model="subTabsName" class="-mt-15px -mb-10px">
         <el-tab-pane label="入库产品清单" name="item">
-          <StockInItemForm ref="itemFormRef" :items="formData.items" :disabled="disabled"/>
+          <StockInItemForm ref="itemFormRef" :items="formData.items" :biz-type="formData.bizType" :dept-id="formData.deptId" :disabled="disabled"/>
         </el-tab-pane>
       </el-tabs>
     </ContentWrap>
@@ -91,6 +104,7 @@
   </Dialog>
 </template>
 <script setup lang="ts">
+import { nextTick } from 'vue'
 import {StockInApi, StockInVO} from '@/api/erp/stock/in'
 import StockInItemForm from './components/StockInItemForm.vue'
 import {SupplierApi, SupplierVO} from '@/api/erp/purchase/supplier'
@@ -109,10 +123,12 @@ const formLoading = ref(false) // 表单的加载中：1）修改时的数据加
 const formType = ref('') // 表单的类型：create - 新增；update - 修改；detail - 详情
 const formData = ref({
   id: undefined,
+  no: '',
   supplierId: undefined,
   inTime: undefined,
   remark: undefined,
   fileUrl: '',
+  bizType: 10,
   items: [],
   deptId: undefined
 })
@@ -175,6 +191,8 @@ const emit = defineEmits(['success']) // 定义 success 事件，用于操作成
 const submitForm = async () => {
   // 校验表单
   await formRef.value.validate()
+  formData.value.items = itemFormRef.value.getTableData()
+  await nextTick()
   await itemFormRef.value.validate()
   // 提交请求
   formLoading.value = true
@@ -199,10 +217,12 @@ const submitForm = async () => {
 const resetForm = () => {
   formData.value = {
     id: undefined,
+    no: '',
     supplierId: undefined,
     inTime: undefined,
     remark: undefined,
-    fileUrl: undefined,
+    fileUrl: '',
+    bizType: 10,
     items: [],
     deptId: undefined
   }

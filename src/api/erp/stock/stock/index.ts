@@ -30,9 +30,9 @@ export const StockApi = {
     return await request.get({ url: `/erp/stock/get?id=` + id })
   },
 
-  // 查询产品库存详情
-  getStock2: async (productId: number, warehouseId: number) => {
-    return await request.get({ url: `/erp/stock/get`, params: { productId, warehouseId } })
+  // 查询产品库存详情（支持批次查询）
+  getStock2: async (productId: number, warehouseId: number, purchaseInItemId?: number) => {
+    return await request.get({ url: `/erp/stock/get`, params: { productId, warehouseId, purchaseInItemId } })
   },
 
   // 获得产品库存数量

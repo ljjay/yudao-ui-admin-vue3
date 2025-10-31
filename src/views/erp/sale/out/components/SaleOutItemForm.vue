@@ -885,41 +885,71 @@ const getUniqueBatches = (row: any) => {
     return []
   }
 
-  // 如果row.purchaseInItemId在row.availableStocks.purchaseInItemId不存在，则清除row.purchaseInItemId
-  if (row.purchaseInItemId && !row.availableStocks.some(stock => stock.purchaseInItemId === row.purchaseInItemId)) {
-    row.purchaseInItemId = null
-  }
+  // 汇总同一产品其他行已占用的批次 + 仓库组合
+  const occupiedByBatch = new Map<number, Set<number | null>>()
+  formData.value
+    .filter(r => r.productId === row.productId && r !== row)
+    .forEach(r => {
+      if (!r.purchaseInItemId) {
+        return
+      }
+      const set = occupiedByBatch.get(r.purchaseInItemId) ?? new Set<number | null>()
+      set.add(r.warehouseId ?? null)
+      occupiedByBatch.set(r.purchaseInItemId, set)
+    })
 
-  // 获取同一产品其他行已选择的批次ID
-  const sameProductRows = formData.value.filter(
-    r => r.productId === row.productId && r !== row
-  )
-  const excludedBatchIds = sameProductRows
-    .map(r => r.purchaseInItemId)
-    .filter(Boolean)
-  
-  const batchMap = new Map()
-  row.availableStocks.forEach(stock => {
+  const batchMap = new Map<number, any>()
+  row.availableStocks.forEach((stock: any) => {
     const batchId = stock.purchaseInItemId
-    
-    // 跳过已被其他行选择的批次
-    if (excludedBatchIds.includes(batchId)) {
+    if (!batchId) {
       return
     }
-    
+
+    const occupiedWarehouses = occupiedByBatch.get(batchId)
+    const isCurrentSelection =
+      row.purchaseInItemId === batchId &&
+      ((row.warehouseId ?? null) === (stock.warehouseId ?? null))
+
+    if (occupiedWarehouses && !isCurrentSelection) {
+      // 其他行已占用同批次且同仓库（或尚未指定仓库）时跳过
+      if (occupiedWarehouses.has(null) || occupiedWarehouses.has(stock.warehouseId ?? null)) {
+        return
+      }
+    }
+
     if (!batchMap.has(batchId)) {
-      // 第一次遇到这个批次，存储并初始化库存
       batchMap.set(batchId, {
         ...stock,
         stockCount: stock.stockCount || 0
       })
     } else {
-      // 该批次已存在，累加库存数量（多个仓库的库存总和）
       const existing = batchMap.get(batchId)
       existing.stockCount = (existing.stockCount || 0) + (stock.stockCount || 0)
     }
   })
-  
+
+  // 确保当前选中的批次始终可见
+  if (row.purchaseInItemId && !batchMap.has(row.purchaseInItemId)) {
+    const fallbackStock = (row.availableStocks || []).find((stock: any) => {
+      if (stock.purchaseInItemId !== row.purchaseInItemId) {
+        return false
+      }
+      if (row.warehouseId == null) {
+        return true
+      }
+      return stock.warehouseId === row.warehouseId
+    })
+
+    const fallbackPayload = fallbackStock ? { ...fallbackStock } : {}
+
+    batchMap.set(row.purchaseInItemId, {
+      ...fallbackPayload,
+      purchaseInItemId: row.purchaseInItemId,
+      batchName: fallbackStock?.batchName ?? row.batchName,
+      stockCount: fallbackStock?.stockCount ?? row.stockCount ?? 0
+    })
+  }
+
   return Array.from(batchMap.values())
 }
 
@@ -1113,6 +1143,17 @@ const handleCrossWarehouseSelection = (warehouseIds: number[]) => {
       totalProductPrice: erpPriceMultiply(originalRow.productPrice, uniqueCodes.length),
     }
     
+    // 深拷贝库存信息，确保各行独立维护批次/仓库映射
+    const clonedAvailableStocks = (originalRow.availableStocks || []).map((stock: any) => ({ ...stock }))
+    const batchWarehouses = clonedAvailableStocks.filter(
+      (stock: any) =>
+        stock.purchaseInItemId === originalRow.purchaseInItemId &&
+        stock.warehouseId === warehouseId
+    )
+
+    newRow.availableStocks = clonedAvailableStocks
+    newRow.batchWarehouses = batchWarehouses
+
     // 计算税额
     if (newRow.taxPercent) {
       newRow.taxPrice = erpPriceMultiply(newRow.totalProductPrice, newRow.taxPercent / 100.0)

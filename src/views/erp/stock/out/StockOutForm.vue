@@ -1,5 +1,5 @@
 <template>
-  <Dialog :title="dialogTitle" v-model="dialogVisible" width="1080">
+  <Dialog :title="dialogTitle" v-model="dialogVisible" width="100%" fullscreen>
     <el-form
       ref="formRef"
       :model="formData"
@@ -44,6 +44,19 @@
           </el-form-item>
         </el-col>
         <el-col :span="8">
+          <el-form-item label="业务类型" prop="bizType">
+            <el-select
+              v-model="formData.bizType"
+              placeholder="请选择业务类型"
+              class="!w-1/1"
+            >
+              <el-option label="其他出库" :value="20" />
+              <el-option label="报修装车出库" :value="92" />
+              <el-option label="送修出库" :value="100" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="8">
           <el-form-item label="单位" prop="deptId">
             <el-tree-select
               v-model="formData.deptId"
@@ -78,7 +91,7 @@
     <ContentWrap>
       <el-tabs v-model="subTabsName" class="-mt-15px -mb-10px">
         <el-tab-pane label="出库产品清单" name="item">
-          <StockOutItemForm ref="itemFormRef" :items="formData.items" :disabled="disabled" />
+          <StockOutItemForm ref="itemFormRef" :items="formData.items" :biz-type="formData.bizType" :dept-id="formData.deptId" :disabled="disabled" />
         </el-tab-pane>
       </el-tabs>
     </ContentWrap>
@@ -91,6 +104,7 @@
   </Dialog>
 </template>
 <script setup lang="ts">
+import { nextTick } from 'vue'
 import { StockOutApi, StockOutVO } from '@/api/erp/stock/out'
 import StockOutItemForm from './components/StockOutItemForm.vue'
 import { CustomerApi, CustomerVO } from '@/api/erp/sale/customer'
@@ -113,6 +127,7 @@ const formData = ref({
   outTime: undefined,
   remark: undefined,
   fileUrl: '',
+  bizType: 20,
   items: [],
   deptId: undefined
 })
@@ -173,6 +188,9 @@ const emit = defineEmits(['success']) // 定义 success 事件，用于操作成
 const submitForm = async () => {
   // 校验表单
   await formRef.value.validate()
+  // 同步子表数据，确保新增/删除行被带入提交
+  formData.value.items = itemFormRef.value.getTableData()
+  await nextTick()
   await itemFormRef.value.validate()
   // 提交请求
   formLoading.value = true
@@ -201,6 +219,7 @@ const resetForm = () => {
     outTime: undefined,
     remark: undefined,
     fileUrl: undefined,
+    bizType: 20,
     items: [],
     deptId: undefined
   }

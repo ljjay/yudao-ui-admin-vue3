@@ -9,6 +9,7 @@ export interface ProductVO {
   unitId: number // 单位编号
   unitName?: string // 单位名字
   status: number // 产品状态
+  batchManage?: number // 批次管理类型：10-不管理，20-批次管理，30-一物一码管理
   standard: string // 产品规格
   remark: string // 产品备注
   expiryDay: number // 保质期天数

@@ -11,6 +11,24 @@ export interface StockOutVO {
   status: number // 状态
   remark: string // 备注
   deptId: number // 部门编号
+  bizType?: number // 业务类型：20-其他出库, 92-报修出库, 100-送修出库
+  items?: StockOutItemVO[] // 出库明细列表
+}
+
+// ERP 其它出库单明细 VO
+export interface StockOutItemVO {
+  id?: number // 出库项编号
+  warehouseId: number // 仓库编号
+  productId: number // 产品编号
+  productUnitName?: string // 产品单位名称
+  productBarCode?: string // 产品条码
+  count: number // 产品数量
+  price: number // 产品单价，单位：元
+  totalPrice?: number // 总价，单位：元
+  remark?: string // 备注
+  purchaseInItemId?: number // 采购入库项编号（批次ID）
+  batchName?: string // 批次名称（只读，从后端返回）
+  uniqueCodes?: string[] // 一物一码列表
 }
 
 // ERP 其它出库单 API
@@ -59,5 +77,24 @@ export const StockOutApi = {
   // 导出其它出库单 Excel
   exportStockOut: async (params) => {
     return await request.download({ url: `/erp/stock-out/export-excel`, params })
+  },
+
+  // 查询可用的一物一码列表（用于其他出库）
+  getAvailableUniqueCodesForStockOut: async (params: {
+    warehouseId?: number
+    productId: number
+    purchaseInItemId: number
+    deptId: number
+  }) => {
+    return await request.get({ url: `/erp/stock-out/available-unique-codes`, params })
+  },
+
+  // 根据一物一码列表解析并拆分出库项（用于其他出库）
+  parseUniqueCodesForStockOut: async (data: {
+    codes: string[]
+    deptId: number
+    bizType: number
+  }) => {
+    return await request.post({ url: `/erp/stock-out/parse-unique-codes`, data })
   }
 }
