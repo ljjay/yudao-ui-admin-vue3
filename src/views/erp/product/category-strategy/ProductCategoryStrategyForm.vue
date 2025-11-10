@@ -36,7 +36,7 @@
       <el-form-item label="管理类型" prop="manageType">
         <el-select v-model="formData.manageType" placeholder="请选择管理类型" filterable style="width: 100%">
           <el-option
-            v-for="dict in getIntDictOptions(DICT_TYPE.ERP_PRODUCT_CATEGORY_MANAGEMENT_TYPE)"
+            v-for="dict in filteredManageTypeOptions"
             :key="dict.value"
             :label="dict.label"
             :value="dict.value"
@@ -52,7 +52,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
 import { getIntDictOptions, DICT_TYPE } from '@/utils/dict'
 import { ProductCategoryStrategyApi, ProductCategoryStrategyVO } from '@/api/erp/product/category-strategy'
 import {ProductCategoryApi, ProductCategoryVO} from '@/api/erp/product/category'
@@ -96,6 +96,44 @@ const deptProps = {
   children: 'children',
   label: 'name',
 }
+const allManageTypeOptions = getIntDictOptions(DICT_TYPE.ERP_PRODUCT_CATEGORY_MANAGEMENT_TYPE)
+const categoryManageType = ref<number>()
+const productCategoryMap = ref<Map<number, ProductCategoryVO>>(new Map())
+const filteredManageTypeOptions = computed(() => {
+  if (!categoryManageType.value) {
+    return allManageTypeOptions
+  }
+  return allManageTypeOptions.filter((option) => option.value >= categoryManageType.value!)
+})
+
+const syncCategoryManageType = (pcId?: number) => {
+  if (!pcId) {
+    categoryManageType.value = undefined
+    return
+  }
+  const category = productCategoryMap.value.get(pcId)
+  categoryManageType.value = category?.manageType
+}
+
+watch(
+  () => formData.value.pcId,
+  (pcId) => {
+    syncCategoryManageType(pcId)
+  }
+)
+
+watch(
+  () => categoryManageType.value,
+  (manageType) => {
+    if (!manageType) {
+      return
+    }
+    const currentManageType = formData.value.manageType
+    if (!currentManageType || currentManageType < manageType) {
+      formData.value.manageType = manageType
+    }
+  }
+)
 
 /** 打开弹窗 */
 const open = async (type: string, id?: number) => {
@@ -103,12 +141,12 @@ const open = async (type: string, id?: number) => {
   dialogTitle.value = t('action.' + type)
   formType.value = type
   resetForm()
-  
+
   await Promise.all([
     getProductCategoryTree(),
     getDeptTree()
   ])
-  
+
   // 修改时，设置数据
   if (id) {
     formLoading.value = true
@@ -124,6 +162,7 @@ const open = async (type: string, id?: number) => {
       formLoading.value = false
     }
   }
+  syncCategoryManageType(formData.value.pcId)
 }
 defineExpose({ open }) // 提供 open 方法，用于打开弹窗
 
@@ -166,6 +205,7 @@ const resetForm = () => {
 const getProductCategoryTree = async () => {
   try {
     const data = await ProductCategoryApi.getProductCategorySimpleList()
+    productCategoryMap.value = new Map(data.map((item: ProductCategoryVO) => [item.id, item]))
     productCategoryTreeData.value = handleTree(data, 'id', 'parentId')
   } catch (error) {
     console.error('获取产品分类树失败:', error)

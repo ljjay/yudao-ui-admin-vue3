@@ -49,9 +49,9 @@
               v-model="row.productId"
               clearable
               filterable
-              @change="onChangeProduct($event, row)"
               :disabled="!props.deptId"
               :placeholder="props.deptId ? '请选择产品' : '请先选择单位'"
+              @change="onChangeProduct($event, row)"
             >
               <el-option
                 v-for="item in productList"
@@ -1267,9 +1267,44 @@ const getTableData = () => formData.value
 
 defineExpose({ validate, resetWarehouseList, getTableData })
 
+// 监听单位变化，重新加载产品列表
+watch(
+  () => props.deptId,
+  async (newDeptId, oldDeptId) => {
+    if (newDeptId) {
+      // 加载新单位的产品列表
+      productList.value = await ProductApi.getProductSimpleList({ deptId: newDeptId })
+      
+      // 单位变更时，清空所有行的产品选择
+      if (oldDeptId && newDeptId !== oldDeptId) {
+        formData.value.forEach(row => {
+          row.productId = undefined
+          row.productName = undefined
+          row.productBarCode = undefined
+          row.productUnitName = undefined
+          row.productPrice = undefined
+          row.manageType = 10
+          row.purchaseInItemId = undefined
+          row.batchName = undefined
+          row.uniqueCodes = []
+          row.stockCount = 0
+          row.availableStocks = undefined
+          row.batchWarehouses = undefined
+        })
+      }
+    } else {
+      productList.value = []
+    }
+  },
+  { immediate: true }
+)
+
 /** 初始化 */
 onMounted(async () => {
-  productList.value = await ProductApi.getProductSimpleList()
+  // 初始化时如果没有单位，显示空列表
+  if (!props.deptId) {
+    productList.value = []
+  }
   //warehouseList.value = await WarehouseApi.getWarehouseSimpleList()
   //defaultWarehouse.value = warehouseList.value.find((item) => item.defaultStatus)
   // 默认添加一个

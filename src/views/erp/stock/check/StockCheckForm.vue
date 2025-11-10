@@ -1,5 +1,5 @@
 <template>
-  <Dialog :title="dialogTitle" v-model="dialogVisible" width="1080">
+  <Dialog :title="dialogTitle" v-model="dialogVisible" width="100%" fullscreen>
     <el-form
       ref="formRef"
       :model="formData"
@@ -56,11 +56,12 @@
         </el-col>
       </el-row>
     </el-form>
+    
     <!-- 子表的表单 -->
     <ContentWrap>
       <el-tabs v-model="subTabsName" class="-mt-15px -mb-10px">
         <el-tab-pane label="盘点产品清单" name="item">
-          <StockCheckItemForm ref="itemFormRef" :items="formData.items" :disabled="disabled" />
+          <StockCheckItemForm ref="itemFormRef" :items="formData.items" :dept-id="formData.deptId" :disabled="disabled" />
         </el-tab-pane>
       </el-tabs>
     </ContentWrap>
@@ -73,6 +74,7 @@
   </Dialog>
 </template>
 <script setup lang="ts">
+import { nextTick } from 'vue'
 import { StockCheckApi, StockCheckVO } from '@/api/erp/stock/check'
 import StockCheckItemForm from './components/StockCheckItemForm.vue'
 import {defaultProps, handleTree} from "@/utils/tree";
@@ -90,6 +92,7 @@ const formLoading = ref(false) // 表单的加载中：1）修改时的数据加
 const formType = ref('') // 表单的类型：create - 新增；update - 修改；detail - 详情
 const formData = ref({
   id: undefined,
+  no: '',
   customerId: undefined,
   checkTime: undefined,
   remark: undefined,
@@ -150,6 +153,8 @@ const emit = defineEmits(['success']) // 定义 success 事件，用于操作成
 const submitForm = async () => {
   // 校验表单
   await formRef.value.validate()
+  formData.value.items = itemFormRef.value.getTableData()
+  await nextTick()
   await itemFormRef.value.validate()
   // 提交请求
   formLoading.value = true
@@ -174,10 +179,11 @@ const submitForm = async () => {
 const resetForm = () => {
   formData.value = {
     id: undefined,
+    no: '',
     customerId: undefined,
     checkTime: undefined,
     remark: undefined,
-    fileUrl: undefined,
+    fileUrl: '',
     items: [],
     deptId: undefined
   }

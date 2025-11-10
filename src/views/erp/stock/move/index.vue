@@ -181,12 +181,27 @@
         width="120px"
       />
       <el-table-column label="创建人" align="center" prop="creatorName" />
+      <el-table-column label="调出批次" align="center" min-width="160">
+        <template #default="{ row }">
+          {{ getFromBatchSummary(row) }}
+        </template>
+      </el-table-column>
+      <el-table-column label="调入批次" align="center" min-width="160">
+        <template #default="{ row }">
+          {{ getToBatchSummary(row) }}
+        </template>
+      </el-table-column>
       <el-table-column
         label="数量"
         align="center"
         prop="totalCount"
         :formatter="erpCountTableColumnFormatter"
       />
+      <el-table-column label="一物一码数量" align="center" min-width="140">
+        <template #default="{ row }">
+          {{ getUniqueCodeTotal(row) }}
+        </template>
+      </el-table-column>
       <el-table-column
         label="金额"
         align="center"
@@ -301,6 +316,36 @@ const warehouseList = ref<WarehouseVO[]>([]) // 仓库列表
 const userList = ref<UserVO[]>([]) // 用户列表
 const deptIdTreeData = ref<any[]>([]) // 部门树形结构
 const toDeptIdTreeData = ref<any[]>([]) // 调出部门树形结构
+
+const getFromBatchSummary = (row: StockMoveVO) => {
+  if (!row?.items || row.items.length === 0) return '—'
+  const names = Array.from(
+    new Set(
+      row.items
+        .map((item) => item.fromBatchName || (item.fromPurchaseInItemId ? `ID:${item.fromPurchaseInItemId}` : ''))
+        .filter((name) => !!name)
+    )
+  )
+  return names.length ? names.join('、') : '—'
+}
+
+const getToBatchSummary = (row: StockMoveVO) => {
+  if (!row?.items || row.items.length === 0) return '—'
+  const names = Array.from(
+    new Set(
+      row.items
+        .map((item) => item.toBatchName || (item.toPurchaseInItemId ? `ID:${item.toPurchaseInItemId}` : ''))
+        .filter((name) => !!name)
+    )
+  )
+  return names.length ? names.join('、') : '—'
+}
+
+const getUniqueCodeTotal = (row: StockMoveVO) => {
+  if (!row?.items || row.items.length === 0) return '—'
+  const total = row.items.reduce((sum, item) => sum + (item.uniqueCodes?.length || 0), 0)
+  return total > 0 ? total : '—'
+}
 
 /** 查询列表 */
 const getList = async () => {

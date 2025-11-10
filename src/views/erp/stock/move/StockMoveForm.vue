@@ -45,12 +45,12 @@
               check-on-click-node
               check-strictly
               style="width: 240px"
-              @change=" (value) => {handleDeptChange('from',value)}"
+              @change="(value) => handleDeptChange('from', value)"
             />
           </el-form-item>
         </el-col>
         <el-col :span="8">
-          <el-form-item label="调入单位" prop="deptId">
+          <el-form-item label="调入单位" prop="toDeptId">
             <el-tree-select
               v-model="formData.toDeptId"
               :data="deptIdTreeData"
@@ -59,7 +59,7 @@
               check-on-click-node
               check-strictly
               style="width: 240px"
-              @change=" (value) => {handleDeptChange('to',value)}"
+              @change="(value) => handleDeptChange('to', value)"
             />
           </el-form-item>
         </el-col>
@@ -74,7 +74,13 @@
     <ContentWrap>
       <el-tabs v-model="subTabsName" class="-mt-15px -mb-10px">
         <el-tab-pane label="调度产品清单" name="item">
-          <StockMoveItemForm ref="itemFormRef" :items="formData.items" :disabled="disabled" />
+          <StockMoveItemForm
+            ref="itemFormRef"
+            :items="formData.items"
+            :disabled="disabled"
+            :dept-id="formData.deptId"
+            :to-dept-id="formData.toDeptId"
+          />
         </el-tab-pane>
       </el-tabs>
     </ContentWrap>
@@ -87,10 +93,12 @@
   </Dialog>
 </template>
 <script setup lang="ts">
-import { StockMoveApi, StockMoveVO } from '@/api/erp/stock/move'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
+import { StockMoveApi, type StockMoveVO } from '@/api/erp/stock/move'
 import StockMoveItemForm from './components/StockMoveItemForm.vue'
-import {defaultProps, handleTree} from "@/utils/tree";
-import * as DeptApi from "@/api/system/dept";
+import { defaultProps, handleTree } from '@/utils/tree'
+import * as DeptApi from '@/api/system/dept'
+import { useMessage } from '@/hooks/web/useMessage'
 
 /** ERP 库存调度单表单 */
 defineOptions({ name: 'StockMoveForm' })
@@ -98,52 +106,67 @@ defineOptions({ name: 'StockMoveForm' })
 const { t } = useI18n() // 国际化
 const message = useMessage() // 消息弹窗
 
-const dialogVisible = ref(false) // 弹窗的是否展示
-const dialogTitle = ref('') // 弹窗的标题
-const formLoading = ref(false) // 表单的加载中：1）修改时的数据加载；2）提交的按钮禁用
-const formType = ref('') // 表单的类型：create - 新增；update - 修改；detail - 详情
-const formData = ref({
+const dialogVisible = ref(false)
+const dialogTitle = ref('')
+const formLoading = ref(false)
+const formType = ref('')
+type StockMoveFormState = StockMoveVO & { fileUrl: string | string[] }
+
+const formData = ref<StockMoveFormState>({
   id: undefined,
   customerId: undefined,
   moveTime: undefined,
   remark: undefined,
   fileUrl: '',
-  items: [],
-  deptId: undefined,
-  toDeptId: undefined
+  deptId: undefined as unknown as number,
+  toDeptId: undefined as unknown as number,
+  items: []
 })
 const formRules = reactive({
   moveTime: [{ required: true, message: '调度时间不能为空', trigger: 'blur' }],
-  deptId: [{required: true, message: '单位不能为空', trigger: 'blur'}],
-  toDeptId: [{required: true, message: '调出单位不能为空', trigger: 'blur'}]
+  deptId: [{ required: true, message: '调出单位不能为空', trigger: 'change' }],
+  toDeptId: [{ required: true, message: '调入单位不能为空', trigger: 'change' }]
 })
 const disabled = computed(() => formType.value === 'detail')
 const formRef = ref() // 表单 Ref
 const deptIdTreeData = ref<any[]>([]) // 部门树形结构
-const toDeptIdTreeData = ref<any[]>([]) // 调出部门树形结构
 
 /** 子表的表单 */
 const subTabsName = ref('item')
-const itemFormRef = ref()
+const itemFormRef = ref<any>()
 
 /** 打开弹窗 */
-const open = async (row,type: string, id?: number) => {
+const open = async (row, type: string, id?: number) => {
   dialogVisible.value = true
   dialogTitle.value = t('action.' + type)
   formType.value = type
   resetForm()
   await getDeptIdTreeData()
-  if(row != undefined && row.deptId != undefined){
-    if (itemFormRef.value) {
-      await itemFormRef.value.resetWarehouseList(false,'from',row.deptId)
-      await itemFormRef.value.resetWarehouseList(false,'to',row.toDeptId)
+  const fromDept = row?.deptId ?? formData.value.deptId
+  const toDept = row?.toDeptId ?? formData.value.toDeptId
+  if (itemFormRef.value) {
+    if (fromDept) {
+      await itemFormRef.value.resetWarehouseList(false, 'from', fromDept)
+    }
+    if (toDept) {
+      await itemFormRef.value.resetWarehouseList(false, 'to', toDept)
     }
   }
   // 修改时，设置数据
   if (id) {
     formLoading.value = true
     try {
-      formData.value = await StockMoveApi.getStockMove(id)
+      const detail = await StockMoveApi.getStockMove(id)
+      formData.value = {
+        ...detail,
+        fileUrl: detail.fileUrl ?? '',
+        items: detail.items || []
+      }
+      await nextTick()
+      if (itemFormRef.value) {
+        await itemFormRef.value.resetWarehouseList(false, 'from', formData.value.deptId)
+        await itemFormRef.value.resetWarehouseList(false, 'to', formData.value.toDeptId)
+      }
     } finally {
       formLoading.value = false
     }
@@ -154,13 +177,17 @@ defineExpose({ open }) // 提供 open 方法，用于打开弹窗
 /** 获取有权限的部门 */
 const getDeptIdTreeData = async () => {
   deptIdTreeData.value = handleTree(await DeptApi.getSimpleDeptList())
-  toDeptIdTreeData.value = handleTree(await DeptApi.getSimpleDeptList())
 }
 
 /** 部门更改时 */
-const handleDeptChange = (type: string ,newDeptId: number) => {
+const handleDeptChange = async (type: 'from' | 'to', newDeptId: number) => {
+  if (type === 'from') {
+    formData.value.deptId = newDeptId
+  } else {
+    formData.value.toDeptId = newDeptId
+  }
   if (itemFormRef.value) {
-    itemFormRef.value.resetWarehouseList(true,type,newDeptId)
+    await itemFormRef.value.resetWarehouseList(true, type, newDeptId)
   }
 }
 
@@ -174,13 +201,20 @@ const submitForm = async () => {
   // 提交请求
   formLoading.value = true
   try {
-    const data = formData.value as unknown as StockMoveVO
+    const data = formData.value
+    const res =
+      formType.value === 'create'
+        ? await StockMoveApi.createStockMove(data)
+        : await StockMoveApi.updateStockMove(data)
+    const payload = res.data
+    const hint = payload?.msg ?? payload?.message ?? res.msg
     if (formType.value === 'create') {
-      await StockMoveApi.createStockMove(data)
       message.success(t('common.createSuccess'))
     } else {
-      await StockMoveApi.updateStockMove(data)
       message.success(t('common.updateSuccess'))
+    }
+    if (hint) {
+      message.alert(hint)
     }
     dialogVisible.value = false
     // 发送操作成功的事件
@@ -197,11 +231,30 @@ const resetForm = () => {
     customerId: undefined,
     moveTime: undefined,
     remark: undefined,
-    fileUrl: undefined,
-    items: [],
-    deptId: undefined,
-    toDeptId: undefined
+    fileUrl: '',
+    deptId: undefined as unknown as number,
+    toDeptId: undefined as unknown as number,
+    items: []
   }
   formRef.value?.resetFields()
+  subTabsName.value = 'item'
 }
+
+watch(
+  () => formData.value.deptId,
+  async (val) => {
+    if (itemFormRef.value && val) {
+      await itemFormRef.value.resetWarehouseList(false, 'from', val)
+    }
+  }
+)
+
+watch(
+  () => formData.value.toDeptId,
+  async (val) => {
+    if (itemFormRef.value && val) {
+      await itemFormRef.value.resetWarehouseList(false, 'to', val)
+    }
+  }
+)
 </script>
