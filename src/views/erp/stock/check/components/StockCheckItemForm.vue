@@ -150,6 +150,7 @@
               controls-position="right"
               :min="0"
               :precision="3"
+              :disabled="row.manageType === 30"
               class="!w-100%"
             />
           </el-form-item>
@@ -368,12 +369,15 @@ watch(
     }
     // 循环处理
     val.forEach((item) => {
-      // 计算盈亏数量
-      if (item.stockCount != null && item.actualCount != null) {
-        item.count = item.actualCount - item.stockCount
-      } else {
-        item.count = undefined
+      // 一物一码管理：actualCount 由唯一码数量推导
+      if (item.manageType === 30) {
+        const codesLen = Array.isArray(item.uniqueCodes) ? item.uniqueCodes.length : 0
+        item.actualCount = codesLen
       }
+      // 计算盈亏数量（通用）
+      item.count = (item.stockCount != null && item.actualCount != null)
+        ? (item.actualCount - item.stockCount)
+        : undefined
       // 计算总价
       item.totalPrice = erpPriceMultiply(item.productPrice, item.count)
     })
@@ -609,14 +613,10 @@ const confirmUniqueCodeInput = () => {
   // 去重
   const uniqueCodes = [...new Set(codes)]
 
-  // 校验数量
-  const expectedCount = Math.floor((currentEditRow.value?.actualCount) || 0)
-  if (uniqueCodes.length !== expectedCount) {
-    message.error(`需要输入${expectedCount}个一物一码，当前输入${uniqueCodes.length}个`)
-    return
-  }
-
   currentEditRow.value.uniqueCodes = uniqueCodes
+  // 一物一码管理：实际库存与盈亏数量由唯一码数量推导
+  currentEditRow.value.actualCount = uniqueCodes.length
+  currentEditRow.value.count = (currentEditRow.value.actualCount || 0) - (currentEditRow.value.stockCount || 0)
   uniqueCodeDialogVisible.value = false
   message.success('一物一码输入成功')
 }
@@ -627,8 +627,6 @@ const getUniqueCodeRules = (row) => {
     validator: (_rule, value, callback) => {
       if (!value || value.length === 0) {
         callback(new Error('请输入一物一码'))
-      } else if (value.length !== Math.floor(row.actualCount)) {
-        callback(new Error(`需要输入${Math.floor(row.actualCount)}个一物一码`))
       } else {
         callback()
       }
@@ -699,8 +697,22 @@ const confirmBatchUniqueCodeInput = async () => {
     const reusedCodes: string[] = []
     const inputDuplicateCodes: string[] = []
     const skippedGroups: string[] = []
+    const nonUniqueManagedCodes: string[] = [] // 分类/批次管理下需删除的一物一码
+    // 统计有效解析码（仅计入一码管理）
+    const validParsedCodeSet = new Set<string>()
 
     result.forEach((item: any) => {
+      const manageType = Number(item.manageType ?? 10)
+      // 分类/批次管理：收集需删除的一物一码并跳过该分组
+      if (manageType !== 30) {
+        if (Array.isArray(item.uniqueCodes)) {
+          item.uniqueCodes.forEach((code: string) => {
+            if (code) nonUniqueManagedCodes.push(code)
+          })
+        }
+        return
+      }
+
       const row: any = {
         id: undefined,
         warehouseId: item.warehouseId,
@@ -714,7 +726,7 @@ const confirmBatchUniqueCodeInput = async () => {
         count: undefined,
         totalPrice: undefined,
         remark: undefined,
-        manageType: 30, // 一物一码管理
+        manageType, // 使用后端返回的管理类型
         purchaseInItemId: item.purchaseInItemId,
         batchName: item.batchName,
         uniqueCodes: Array.isArray(item.uniqueCodes) ? item.uniqueCodes.filter(code => !!code) : []
@@ -755,6 +767,7 @@ const confirmBatchUniqueCodeInput = async () => {
         row.actualCount = filteredCodes.length
         row.count = row.actualCount - row.stockCount
         filteredCodes.forEach((code) => existingCodeSet.add(code))
+        filteredCodes.forEach((code) => validParsedCodeSet.add(code))
       } else if (Array.isArray(row.uniqueCodes) && row.uniqueCodes.length > 0) {
         const filteredCodes: string[] = []
         row.uniqueCodes.forEach((code: string) => {
@@ -767,6 +780,7 @@ const confirmBatchUniqueCodeInput = async () => {
           }
         })
         row.uniqueCodes = filteredCodes
+        filteredCodes.forEach((code) => validParsedCodeSet.add(code))
       }
 
       newRows.push(row)
@@ -829,10 +843,16 @@ const confirmBatchUniqueCodeInput = async () => {
 
     if (addedRowCount === 0 && mergedRowCount === 0) {
       message.warning('未添加新的盘点项，请检查输入是否重复或无效')
+      if (nonUniqueManagedCodes.length > 0) {
+        const list = Array.from(new Set(nonUniqueManagedCodes))
+        message.warning(`以下一物一码在该单位非一码管理，已跳过，请删除后重试：${list.join('、')}`)
+      }
       return
     }
 
-    message.success(`成功解析 ${uniqueCodes.length} 个一物一码，新增 ${addedRowCount} 行，合并 ${mergedRowCount} 行`)
+    // 仅统计有效解析（一码管理）码数量
+    const validParsedCount = validParsedCodeSet.size
+    message.success(`成功解析 ${validParsedCount} 个一物一码，新增 ${addedRowCount} 行，合并 ${mergedRowCount} 行`)
 
     const infoMessages: string[] = []
     if (reusedCodes.length > 0) {
@@ -846,6 +866,10 @@ const confirmBatchUniqueCodeInput = async () => {
     if (skippedGroups.length > 0) {
       const list = Array.from(new Set(skippedGroups))
       infoMessages.push(`部分产品因一物一码全部重复未添加：${list.join('；')}`)
+    }
+    if (nonUniqueManagedCodes.length > 0) {
+      const list = Array.from(new Set(nonUniqueManagedCodes))
+      infoMessages.push(`以下一物一码在该单位非一码管理，已跳过，请删除后重试：${list.join('、')}`)
     }
     infoMessages.forEach((msgText) => message.info(msgText))
 

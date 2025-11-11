@@ -41,14 +41,47 @@
           clearable
           class="!w-240px"
         >
-          <el-option label="采购入库" :value="10" />
-          <el-option label="采购退货" :value="11" />
-          <el-option label="销售出库" :value="20" />
-          <el-option label="销售退货" :value="21" />
-          <el-option label="其他入库" :value="31" />
-          <el-option label="其他出库" :value="32" />
-          <el-option label="库存调拨" :value="33" />
-          <el-option label="库存盘点" :value="40" />
+          <!-- 其它入库/出库 -->
+          <el-option label="其它入库" :value="10" />
+          <el-option label="其它入库（作废）" :value="11" />
+          <el-option label="其它出库" :value="20" />
+          <el-option label="其它出库（作废）" :value="21" />
+          
+          <!-- 调拨 -->
+          <el-option label="调拨入库" :value="30" />
+          <el-option label="调拨入库（作废）" :value="31" />
+          <el-option label="调拨出库" :value="32" />
+          <el-option label="调拨出库（作废）" :value="33" />
+          
+          <!-- 盘点 -->
+          <el-option label="盘盈入库" :value="40" />
+          <el-option label="盘盈入库（作废）" :value="41" />
+          <el-option label="盘亏出库" :value="42" />
+          <el-option label="盘亏出库（作废）" :value="43" />
+          
+          <!-- 销售 -->
+          <el-option label="销售出库" :value="50" />
+          <el-option label="销售出库（作废）" :value="51" />
+          <el-option label="销售退货入库" :value="60" />
+          <el-option label="销售退货入库（作废）" :value="61" />
+          
+          <!-- 采购 -->
+          <el-option label="采购入库" :value="70" />
+          <el-option label="采购入库（作废）" :value="71" />
+          <el-option label="采购退货出库" :value="80" />
+          <el-option label="采购退货出库（作废）" :value="81" />
+          
+          <!-- 报修 -->
+          <el-option label="报修拆车入库" :value="90" />
+          <el-option label="报修拆车入库（作废）" :value="91" />
+          <el-option label="报修装车出库" :value="92" />
+          <el-option label="报修装车出库（作废）" :value="93" />
+          
+          <!-- 送修 -->
+          <el-option label="送修出库" :value="100" />
+          <el-option label="送修出库（作废）" :value="101" />
+          <el-option label="送修入库" :value="102" />
+          <el-option label="送修入库（作废）" :value="103" />
         </el-select>
       </el-form-item>
       <el-form-item label="业务单号" prop="bizNo">
