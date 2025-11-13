@@ -509,21 +509,13 @@ const loadBatchList = async (row) => {
   }
 
   try {
-    // 获取指定产品在当前单位下的所有批次（跨仓返回明细，前端聚合）
-    const data = await StockApi.getProductStockForOperation(row.productId, props.deptId)
-    // 按批次ID聚合库存并保留批次名称
-    const grouped = new Map()
-    ;(data || []).forEach((item) => {
-      const batchId = item.purchaseInItemId
-      if (!batchId) return
-      const existed = grouped.get(batchId) || { purchaseInItemId: batchId, batchName: item.batchName, stockCount: 0 }
-      const inc = Number(item.stockCount) || 0
-      existed.stockCount = (Number(existed.stockCount) || 0) + inc
-      if (!existed.batchName && item.batchName) existed.batchName = item.batchName
-      grouped.set(batchId, existed)
-    })
-    const result = Array.from(grouped.values())
-    batchStockMap.value.set(key, result)
+    const data = await StockApi.getProductBatchList(row.productId, props.deptId)
+    const normalized = (data || []).map((item: any) => ({
+      purchaseInItemId: item.purchaseInItemId,
+      batchName: item.batchName,
+      stockCount: Number(item.stockCount) || 0
+    }))
+    batchStockMap.value.set(key, normalized)
   } catch (e) {
     console.error('加载批次失败', e)
   }

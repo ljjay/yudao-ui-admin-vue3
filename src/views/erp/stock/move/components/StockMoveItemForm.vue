@@ -320,7 +320,7 @@ import { WarehouseApi, type WarehouseVO } from '@/api/erp/stock/warehouse'
 import { StockApi } from '@/api/erp/stock/stock'
 import {
   StockMoveApi,
-  type StockMoveItemVO,
+  type StockMoveItemVO as StockMoveItemBaseVO,
   type StockMoveItemParseRespVO
 } from '@/api/erp/stock/move'
 import {
@@ -332,6 +332,10 @@ import {
 import { useMessage } from '@/hooks/web/useMessage'
 
 const message = useMessage()
+
+type StockMoveItemVO = StockMoveItemBaseVO & {
+  toBatchOptions?: Array<{ purchaseInItemId?: number; batchName?: string; stockCount?: number }>
+}
 
 const props = defineProps<{
   items: StockMoveItemVO[]
@@ -467,9 +471,11 @@ watch(
           row.toBatchName = undefined
         }
         row.toStocks = undefined
+        row.toBatchOptions = undefined
       } else {
         syncIntraDeptTarget(row)
         row.toStocks = undefined
+        row.toBatchOptions = undefined
       }
     })
     if (skipReset && cross) {
@@ -590,8 +596,9 @@ const getToBatchPlaceholder = (row: StockMoveItemVO) => {
   if (!isCrossDept.value) return '同单位调拨无需选择'
   if (!props.toDeptId) return '请先选择调入单位'
   if (!row?.productId) return '请先选择产品'
-  if (!row.toStocks || row.toStocks.length === 0) return '请选择调入批次（可选择库存为 0 的批次）'
-  return '请选择调入批次（库存不足亦可调入）'
+  const batches = Array.isArray(row?.toBatchOptions) ? row.toBatchOptions : []
+  if (batches.length === 0) return '暂无历史批次，可新建批次'
+  return '请选择调入批次（允许库存为 0）'
 }
 
 const formatBatchOption = (item: any) => {
@@ -828,17 +835,14 @@ const getFromBatchOptions = (row: StockMoveItemVO) => {
 }
 
 const getToBatchOptions = (row: StockMoveItemVO) => {
-  const stocks = row.toStocks || []
-  let options = Array.isArray(stocks) ? stocks.slice() : []
-  const selectedId = toNumberOrUndefined(row.toPurchaseInItemId)
+  let options = Array.isArray(row?.toBatchOptions) ? row.toBatchOptions.slice() : []
+  const selectedId = toNumberOrUndefined(row?.toPurchaseInItemId)
   if (selectedId != null && !options.some((item: any) => toNumberOrUndefined(item?.purchaseInItemId) === selectedId)) {
-    options = options.concat([
-      {
-        purchaseInItemId: selectedId,
-        batchName: row.toBatchName,
-        warehouseId: row.toWarehouseId
-      }
-    ])
+    options.push({
+      purchaseInItemId: selectedId,
+      batchName: row?.toBatchName,
+      stockCount: undefined
+    })
   }
   return options
 }
@@ -876,11 +880,20 @@ const loadToStocks = async (row: StockMoveItemVO) => {
     return
   }
   try {
-    row.toStocks =
-      (await StockApi.getProductStockForOperation(row.productId, props.toDeptId)) || []
+    const [stockList, batchList] = await Promise.all([
+      StockApi.getProductStockForOperation(row.productId, props.toDeptId),
+      StockApi.getProductBatchList(row.productId, props.toDeptId)
+    ])
+    row.toStocks = stockList || []
+    row.toBatchOptions = (batchList || []).map((item: any) => ({
+      purchaseInItemId: item.purchaseInItemId,
+      batchName: item.batchName,
+      stockCount: Number(item.stockCount) || 0
+    }))
   } catch (error) {
     console.error('加载调入批次失败', error)
     row.toStocks = []
+    row.toBatchOptions = []
   }
 }
 
@@ -1014,20 +1027,12 @@ const onToBatchChange = (value: any, row: StockMoveItemVO) => {
     return
   }
   row.toPurchaseInItemId = normalizedId ?? undefined
-  const stocks = row.toStocks || []
-  let match = stocks.find(
-    (item: any) =>
-      item.purchaseInItemId === row.toPurchaseInItemId &&
-      (!row.toWarehouseId || row.toWarehouseId === item.warehouseId)
+  const options = getToBatchOptions(row)
+  const match = options.find(
+    (item: any) => toNumberOrUndefined(item.purchaseInItemId) === toNumberOrUndefined(row.toPurchaseInItemId)
   )
-  if (!match) {
-    match = stocks.find((item: any) => item.purchaseInItemId === row.toPurchaseInItemId)
-  }
   if (match) {
     row.toBatchName = match.batchName
-    if (!row.toWarehouseId && match.warehouseId) {
-      row.toWarehouseId = match.warehouseId
-    }
   } else {
     row.toBatchName = undefined
   }
@@ -1072,6 +1077,7 @@ const onChangeProduct = async (productId: number, row: StockMoveItemVO) => {
   row.fromAvailableStocks = undefined
   row.fromBatchWarehouses = undefined
   row.toStocks = undefined
+  row.toBatchOptions = undefined
   syncIntraDeptTarget(row)
   await Promise.all([loadFromStocks(row), loadToStocks(row)])
   refreshRowAmount(row)
@@ -1714,12 +1720,14 @@ const resetWarehouseList = async (isReset: boolean, type: 'from' | 'to', deptId?
       row.toPurchaseInItemId = undefined
       row.toBatchName = undefined
       row.toStocks = undefined
+      row.toBatchOptions = undefined
       row.remark = ''
     } else {
       row.toWarehouseId = undefined
       row.toPurchaseInItemId = undefined
       row.toBatchName = undefined
       row.toStocks = undefined
+      row.toBatchOptions = undefined
       if (row.productId) {
         const product = findProductInfo(row.productId)
         const fallback = row.manageTypeTo ?? product?.batchManage ?? 10

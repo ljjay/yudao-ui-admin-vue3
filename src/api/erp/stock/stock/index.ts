@@ -105,5 +105,18 @@ export const StockApi = {
       url: `/erp/stock/get-product-stock-for-operation`,
       params: { productId, deptId }
     })
+  },
+
+  /**
+   * 获取产品历史批次列表（含零库存）
+   *
+   * @param productId 产品编号
+   * @param deptId 部门编号
+   */
+  getProductBatchList: async (productId: number, deptId: number) => {
+    return await request.get({
+      url: `/erp/stock/get-product-batch-list`,
+      params: { productId, deptId }
+    })
   }
 }
